@@ -86,6 +86,7 @@ export default function App() {
   }
 
   function handleGeneratePitch(book: BookRecommendation) {
+    if (!isOwner) return
     if (!hasApiKey) { setApiKeyOpen(true); return }
     generatePitch(book, apiKey, tasteProfile)
   }
@@ -185,7 +186,7 @@ export default function App() {
             tasteProfile={tasteProfile}
             streamingTexts={streamingTexts}
             loadingIds={loadingIds}
-            hasApiKey={hasApiKey}
+            hasApiKey={hasApiKey && isOwner}
             onGeneratePitch={handleGeneratePitch}
             onDelete={deleteBook}
           />
