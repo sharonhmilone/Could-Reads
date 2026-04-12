@@ -6,6 +6,11 @@ function makeClient(apiKey: string): Anthropic {
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 }
 
+export interface GeneratePitchResult {
+  pitch: string
+  tasteScore: number // 1–10
+}
+
 export interface GeneratePitchParams {
   apiKey: string
   book: BookRecommendation
@@ -13,13 +18,23 @@ export interface GeneratePitchParams {
   onChunk: (text: string) => void
 }
 
-export async function generateWhyReadPitch(params: GeneratePitchParams): Promise<string> {
+/**
+ * Streams a personal pitch for the book, then parses a SCORE line at the end.
+ * Claude outputs:
+ *   <pitch text>
+ *   SCORE: 8
+ *
+ * We strip the SCORE line from the displayed pitch text.
+ */
+export async function generateWhyReadPitch(
+  params: GeneratePitchParams
+): Promise<GeneratePitchResult> {
   const { apiKey, book, tasteProfile, onChunk } = params
   const client = makeClient(apiKey)
 
   const tasteContext = tasteProfile
     ? formatTasteProfileForAI(tasteProfile)
-    : 'No reading history available — write a generally compelling pitch.'
+    : 'No reading history — write a generally compelling pitch and score 5.'
 
   const friendContext = book.friendNote
     ? `\nTheir friend noted: "${book.friendNote}"`
@@ -27,17 +42,17 @@ export async function generateWhyReadPitch(params: GeneratePitchParams): Promise
 
   const userMessage = `Reading history: ${tasteContext}
 
-The reader has been recommended: "${book.title}" by ${book.author}.${friendContext}
+Recommended book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2-3 sentence personal pitch for why THIS specific reader should read this book. Be specific, reference their taste where relevant. Don't use filler phrases like "you'll love" or "perfect for you". Be direct and interesting.`
+Write a 2–3 sentence personal pitch for why this reader should read this book. Then on a new line output exactly: SCORE: X (where X is 1–10 for how well this matches their taste — 10 = perfect fit, 1 = very different from what they like). No other text after the score.`
 
   let accumulated = ''
 
   const stream = client.messages.stream({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 200,
+    max_tokens: 220,
     system:
-      'You are a literary matchmaker. You write brief, personal, compelling pitches for why a specific reader should read a specific book. Two to three sentences. Direct, warm, no fluff.',
+      'You are a literary matchmaker. Write brief, personal pitches (2–3 sentences) for why a specific reader should read a book, then output SCORE: X on its own line. Direct, warm, no filler.',
     messages: [{ role: 'user', content: userMessage }],
   })
 
@@ -46,10 +61,28 @@ Write a 2-3 sentence personal pitch for why THIS specific reader should read thi
       event.type === 'content_block_delta' &&
       event.delta.type === 'text_delta'
     ) {
-      accumulated += event.delta.text
-      onChunk(event.delta.text)
+      const chunk = event.delta.text
+      accumulated += chunk
+
+      // Only stream visible pitch text — don't stream the SCORE line
+      // Detect when we hit the SCORE line and stop streaming to UI
+      const scoreLine = accumulated.match(/\nSCORE:\s*\d+\s*$/)
+      if (!scoreLine) {
+        // Also avoid streaming a partial "\nSCORE" that's starting to appear
+        const partialScore = accumulated.match(/\nSCORE:?\s*\d*$/)
+        if (!partialScore) {
+          onChunk(chunk)
+        }
+      }
     }
   }
 
-  return accumulated
+  // Parse score from the end of accumulated text
+  const scoreMatch = accumulated.match(/\nSCORE:\s*(\d+)\s*$/)
+  const tasteScore = scoreMatch ? Math.min(10, Math.max(1, parseInt(scoreMatch[1]!, 10))) : 5
+
+  // Strip the SCORE line from the pitch text
+  const pitch = accumulated.replace(/\nSCORE:\s*\d+\s*$/, '').trim()
+
+  return { pitch, tasteScore }
 }

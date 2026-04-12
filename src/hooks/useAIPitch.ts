@@ -3,11 +3,10 @@ import { generateWhyReadPitch } from '@/lib/claude'
 import type { BookRecommendation, TasteProfile } from '@/lib/types'
 
 export function useAIPitch(
-  onPitchComplete: (bookId: string, pitch: string) => void
+  onPitchComplete: (bookId: string, pitch: string, tasteScore: number) => void
 ) {
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
   const [streamingTexts, setStreamingTexts] = useState<Map<string, string>>(new Map())
-  // Accumulator refs per book so we don't re-render on every single character
   const accumulators = useRef<Map<string, string>>(new Map())
   const rafIds = useRef<Map<string, number>>(new Map())
 
@@ -23,7 +22,7 @@ export function useAIPitch(
       accumulators.current.set(book.id, '')
 
       try {
-        const fullText = await generateWhyReadPitch({
+        const result = await generateWhyReadPitch({
           apiKey,
           book,
           tasteProfile,
@@ -31,7 +30,6 @@ export function useAIPitch(
             const current = (accumulators.current.get(book.id) ?? '') + chunk
             accumulators.current.set(book.id, current)
 
-            // Throttle React renders to ~30fps
             if (rafIds.current.has(book.id)) return
             const id = window.requestAnimationFrame(() => {
               rafIds.current.delete(book.id)
@@ -45,7 +43,7 @@ export function useAIPitch(
           },
         })
 
-        onPitchComplete(book.id, fullText)
+        onPitchComplete(book.id, result.pitch, result.tasteScore)
       } catch (err) {
         console.error('AI pitch generation failed:', err)
       } finally {

@@ -14,25 +14,16 @@ import { useTasteProfile } from '@/hooks/useTasteProfile'
 import { useApiKey } from '@/hooks/useApiKey'
 import { useAIPitch } from '@/hooks/useAIPitch'
 
-import type {
-  BookRecommendation,
-  BookStatus,
-  FilterState,
-  SortDirection,
-  SortField,
-  ViewName,
-} from '@/lib/types'
-
-const DEFAULT_FILTER: FilterState = { status: 'all', source: 'all', recommender: 'all' }
+import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/lib/types'
 
 export default function App() {
-  const { books, addBook, updateBook, updateStatus, deleteBook } = useBooks()
+  const { books, addBook, updateBook, deleteBook } = useBooks()
   const { tasteProfile, setTasteProfile } = useTasteProfile()
   const { apiKey, setApiKey, hasApiKey } = useApiKey()
 
   const handlePitchComplete = useCallback(
-    (bookId: string, pitch: string) => {
-      updateBook(bookId, { aiPitch: pitch, aiPitchGeneratedAt: new Date().toISOString() })
+    (bookId: string, pitch: string, tasteScore: number) => {
+      updateBook(bookId, { aiPitch: pitch, tasteScore, aiPitchGeneratedAt: new Date().toISOString() })
     },
     [updateBook]
   )
@@ -42,13 +33,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewName>('library')
   const [addOpen, setAddOpen] = useState(false)
   const [apiKeyOpen, setApiKeyOpen] = useState(!hasApiKey)
-  const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER)
   const [sortField, setSortField] = useState<SortField>('dateAdded')
   const [sortDir, setSortDir] = useState<SortDirection>('desc')
-
-  function handleFilterChange(partial: Partial<FilterState>) {
-    setFilter((prev) => ({ ...prev, ...partial }))
-  }
 
   function handleSortChange(field: SortField, dir: SortDirection) {
     setSortField(field)
@@ -56,34 +42,25 @@ export default function App() {
   }
 
   function handleGeneratePitch(book: BookRecommendation) {
-    if (!hasApiKey) {
-      setApiKeyOpen(true)
-      return
-    }
+    if (!hasApiKey) { setApiKeyOpen(true); return }
     generatePitch(book, apiKey, tasteProfile)
   }
 
-  // Filter + sort
-  const filteredBooks = books
-    .filter((b) => {
-      if (filter.status !== 'all' && b.status !== filter.status) return false
-      if (filter.source !== 'all' && b.source !== filter.source) return false
-      if (filter.recommender !== 'all' && b.recommender !== filter.recommender) return false
-      return true
-    })
-    .sort((a, b) => {
-      let cmp = 0
-      if (sortField === 'dateAdded') {
-        cmp = a.dateAdded.localeCompare(b.dateAdded)
-      } else if (sortField === 'title') {
-        cmp = a.title.localeCompare(b.title)
-      } else if (sortField === 'author') {
-        cmp = a.author.localeCompare(b.author)
-      } else if (sortField === 'recommender') {
-        cmp = a.recommender.localeCompare(b.recommender)
-      }
-      return sortDir === 'asc' ? cmp : -cmp
-    })
+  const sortedBooks = [...books].sort((a, b) => {
+    let cmp = 0
+    if (sortField === 'tasteScore') {
+      cmp = (a.tasteScore ?? 0) - (b.tasteScore ?? 0)
+    } else if (sortField === 'dateAdded') {
+      cmp = a.dateAdded.localeCompare(b.dateAdded)
+    } else if (sortField === 'title') {
+      cmp = a.title.localeCompare(b.title)
+    } else if (sortField === 'author') {
+      cmp = a.author.localeCompare(b.author)
+    } else if (sortField === 'recommender') {
+      cmp = a.recommender.localeCompare(b.recommender)
+    }
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   return (
     <AppShell
@@ -92,16 +69,16 @@ export default function App() {
       hasApiKey={hasApiKey}
       hasTasteProfile={tasteProfile !== null}
     >
-      {/* ── Library view ──────────────────────────── */}
+      {/* ── Library ──────────────────────────────── */}
       {currentView === 'library' && (
-        <div className="space-y-2">
+        <div>
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h1 className="font-type text-4xl text-ink leading-tight">
-                My <span className="hl-pink">stack</span>
+                Could <span className="hl-pink">Reads</span>
               </h1>
               <p className="font-hand text-lg text-ink-faded">
-                {books.length} recommendation{books.length !== 1 ? 's' : ''} from friends
+                {books.length} book{books.length !== 1 ? 's' : ''} from friends
               </p>
             </div>
             <button
@@ -117,28 +94,25 @@ export default function App() {
           {books.length > 0 && (
             <FilterBar
               books={books}
-              filter={filter}
               sortField={sortField}
               sortDir={sortDir}
-              onFilterChange={handleFilterChange}
               onSortChange={handleSortChange}
             />
           )}
 
           <BookGrid
-            books={filteredBooks}
+            books={sortedBooks}
             tasteProfile={tasteProfile}
             streamingTexts={streamingTexts}
             loadingIds={loadingIds}
             hasApiKey={hasApiKey}
             onGeneratePitch={handleGeneratePitch}
-            onStatusChange={(id, status: BookStatus) => updateStatus(id, status)}
             onDelete={deleteBook}
           />
         </div>
       )}
 
-      {/* ── Import view ───────────────────────────── */}
+      {/* ── Import ───────────────────────────────── */}
       {currentView === 'import' && (
         <CsvImport
           onProfileBuilt={(profile) => {
@@ -149,37 +123,33 @@ export default function App() {
         />
       )}
 
-      {/* ── Taste profile view ────────────────────── */}
+      {/* ── Taste profile ────────────────────────── */}
       {currentView === 'taste-profile' && tasteProfile && (
         <TasteProfileView profile={tasteProfile} />
       )}
 
-      {/* ── Settings view ─────────────────────────── */}
+      {/* ── Settings ─────────────────────────────── */}
       {currentView === 'settings' && (
         <div className="space-y-6">
-          <div>
-            <h1 className="font-type text-4xl text-ink mb-1">
-              <span className="hl-yellow">Settings</span>
-            </h1>
-          </div>
+          <h1 className="font-type text-4xl text-ink">
+            <span className="hl-yellow">Settings</span>
+          </h1>
 
           <div className="paper-card p-5 space-y-3">
             <h3 className="font-type text-xl text-ink">Anthropic API key</h3>
             <p className="font-hand text-base text-ink-faded">
-              Used to generate personal "why read this" pitches. Stored only in your browser.
+              Used to generate taste-match scores and personal pitches. Stored only in your browser.
             </p>
             <div className="flex items-center gap-3">
               <span
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{
                   background: hasApiKey ? '#39ff14' : '#ff3db4',
-                  boxShadow: hasApiKey
-                    ? '0 0 8px rgba(57,255,20,0.7)'
-                    : '0 0 8px rgba(255,61,180,0.7)',
+                  boxShadow: hasApiKey ? '0 0 8px rgba(57,255,20,0.7)' : '0 0 8px rgba(255,61,180,0.7)',
                 }}
               />
               <span className="font-hand text-base text-ink-faded">
-                {hasApiKey ? 'API key saved ✓' : 'No API key — AI pitches disabled'}
+                {hasApiKey ? 'API key saved ✓' : 'No API key — scoring disabled'}
               </span>
             </div>
             <button
@@ -195,12 +165,12 @@ export default function App() {
             <div className="paper-card p-5 space-y-3">
               <h3 className="font-type text-xl text-ink">Taste profile</h3>
               <p className="font-hand text-base text-ink-faded">
-                Built from {tasteProfile.totalBooksRead} read books in{' '}
+                Built from <strong>{tasteProfile.totalBooksRead}</strong> read books in{' '}
                 <strong>{tasteProfile.sourceName}</strong>.
               </p>
               <button
                 onClick={() => {
-                  if (confirm('Delete your taste profile? This removes the AI context for pitches.')) {
+                  if (confirm('Delete taste profile? This removes AI scoring context.')) {
                     setTasteProfile(null)
                   }
                 }}
@@ -213,19 +183,8 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Dialogs ───────────────────────────────── */}
-      <AddBookDialog
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAdd={addBook}
-      />
-
-      <ApiKeyDialog
-        open={apiKeyOpen}
-        onClose={() => setApiKeyOpen(false)}
-        currentKey={apiKey}
-        onSave={setApiKey}
-      />
+      <AddBookDialog open={addOpen} onClose={() => setAddOpen(false)} onAdd={addBook} />
+      <ApiKeyDialog open={apiKeyOpen} onClose={() => setApiKeyOpen(false)} currentKey={apiKey} onSave={setApiKey} />
     </AppShell>
   )
 }

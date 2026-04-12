@@ -1,5 +1,5 @@
 import { BookOpen } from 'lucide-react'
-import type { BookRecommendation, BookStatus, TasteProfile } from '@/lib/types'
+import type { BookRecommendation, TasteProfile } from '@/lib/types'
 import { BookCard } from './BookCard'
 
 interface BookGridProps {
@@ -9,7 +9,6 @@ interface BookGridProps {
   loadingIds: Set<string>
   hasApiKey: boolean
   onGeneratePitch: (book: BookRecommendation) => void
-  onStatusChange: (id: string, status: BookStatus) => void
   onDelete: (id: string) => void
 }
 
@@ -20,7 +19,6 @@ export function BookGrid({
   loadingIds,
   hasApiKey,
   onGeneratePitch,
-  onStatusChange,
   onDelete,
 }: BookGridProps) {
   if (books.length === 0) {
@@ -28,10 +26,7 @@ export function BookGrid({
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <div className="relative">
           <BookOpen size={56} className="text-ink-faded/40" strokeWidth={1} />
-          <div
-            className="absolute -top-1 -right-2 text-2xl"
-            style={{ transform: 'rotate(15deg)' }}
-          >
+          <div className="absolute -top-1 -right-2 text-2xl" style={{ transform: 'rotate(15deg)' }}>
             📌
           </div>
         </div>
@@ -39,7 +34,7 @@ export function BookGrid({
           no recommendations yet
         </p>
         <p className="font-hand text-base text-ink-faded/60 text-center max-w-xs">
-          hit the button below to add a book a friend recommended
+          add a book a friend recommended and get a personal pitch for why you'd love it
         </p>
       </div>
     )
@@ -56,7 +51,6 @@ export function BookGrid({
           hasApiKey={hasApiKey}
           hasTasteProfile={tasteProfile !== null}
           onGeneratePitch={() => onGeneratePitch(book)}
-          onStatusChange={(status) => onStatusChange(book.id, status)}
           onDelete={() => onDelete(book.id)}
         />
       ))}

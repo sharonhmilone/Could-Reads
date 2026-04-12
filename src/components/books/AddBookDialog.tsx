@@ -1,27 +1,17 @@
 import { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
-import type { BookRecommendation, RecommendationSource } from '@/lib/types'
+import type { BookRecommendation } from '@/lib/types'
 
 interface AddBookDialogProps {
   open: boolean
   onClose: () => void
-  onAdd: (book: Omit<BookRecommendation, 'id' | 'dateAdded' | 'status'>) => void
+  onAdd: (book: Omit<BookRecommendation, 'id' | 'dateAdded'>) => void
 }
-
-const sources: { value: RecommendationSource; label: string; emoji: string }[] = [
-  { value: 'linkedin',    label: 'LinkedIn',    emoji: '💼' },
-  { value: 'twitter',     label: 'Twitter/X',   emoji: '🐦' },
-  { value: 'in-person',   label: 'In person',   emoji: '🗣️' },
-  { value: 'podcast',     label: 'Podcast',     emoji: '🎙️' },
-  { value: 'newsletter',  label: 'Newsletter',  emoji: '📬' },
-  { value: 'other',       label: 'Other',       emoji: '📌' },
-]
 
 export function AddBookDialog({ open, onClose, onAdd }: AddBookDialogProps) {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [recommender, setRecommender] = useState('')
-  const [source, setSource] = useState<RecommendationSource>('linkedin')
   const [friendNote, setFriendNote] = useState('')
 
   useEffect(() => {
@@ -29,7 +19,6 @@ export function AddBookDialog({ open, onClose, onAdd }: AddBookDialogProps) {
       setTitle('')
       setAuthor('')
       setRecommender('')
-      setSource('linkedin')
       setFriendNote('')
     }
   }, [open])
@@ -43,7 +32,6 @@ export function AddBookDialog({ open, onClose, onAdd }: AddBookDialogProps) {
       title: title.trim(),
       author: author.trim(),
       recommender: recommender.trim(),
-      source,
       friendNote: friendNote.trim() || undefined,
     })
     onClose()
@@ -51,33 +39,20 @@ export function AddBookDialog({ open, onClose, onAdd }: AddBookDialogProps) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-ink/30 animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Dialog */}
+      <div className="fixed inset-0 z-40 bg-ink/30 animate-fade-in" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="paper-card w-full max-w-lg p-6 animate-slide-up relative"
           style={{ transform: 'rotate(-0.5deg)' }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Tape decoration */}
-          <div
-            className="tape"
-            style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(-1deg)' }}
-          />
+          <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(-1deg)' }} />
 
           <div className="flex items-start justify-between mb-6 mt-2">
             <h2 className="font-type text-2xl text-ink">
               Pin a <span className="hl-yellow">new book</span>
             </h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-ink-faded hover:text-ink transition-colors"
-            >
+            <button onClick={onClose} className="p-1 text-ink-faded hover:text-ink transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -124,30 +99,8 @@ export function AddBookDialog({ open, onClose, onAdd }: AddBookDialogProps) {
             </div>
 
             <div>
-              <label className="block font-hand text-sm text-ink-faded mb-2 uppercase tracking-wide">
-                Source
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {sources.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => setSource(s.value)}
-                    className={`tag-chip font-hand text-base transition-all ${
-                      source === s.value
-                        ? 'bg-hi-pink/20 border-hi-pink/50 shadow-glow-pink text-ink'
-                        : 'text-ink-brown hover:bg-paper-dark'
-                    }`}
-                  >
-                    {s.emoji} {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
               <label className="block font-hand text-sm text-ink-faded mb-1 uppercase tracking-wide">
-                Their note / reason <span className="normal-case">(optional)</span>
+                Their note <span className="normal-case">(optional)</span>
               </label>
               <textarea
                 value={friendNote}

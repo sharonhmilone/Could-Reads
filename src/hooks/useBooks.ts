@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { getBooks, saveBooks } from '@/lib/storage'
-import type { BookRecommendation, BookStatus } from '@/lib/types'
+import type { BookRecommendation } from '@/lib/types'
 
 export function useBooks() {
   const [books, setBooks] = useState<BookRecommendation[]>(() => getBooks())
@@ -11,12 +11,11 @@ export function useBooks() {
   }, [])
 
   const addBook = useCallback(
-    (book: Omit<BookRecommendation, 'id' | 'dateAdded' | 'status'>) => {
+    (book: Omit<BookRecommendation, 'id' | 'dateAdded'>) => {
       const newBook: BookRecommendation = {
         ...book,
         id: crypto.randomUUID(),
         dateAdded: new Date().toISOString(),
-        status: 'want-to-read',
       }
       persist([newBook, ...books])
       return newBook
@@ -31,13 +30,6 @@ export function useBooks() {
     [books, persist]
   )
 
-  const updateStatus = useCallback(
-    (id: string, status: BookStatus) => {
-      persist(books.map((b) => (b.id === id ? { ...b, status } : b)))
-    },
-    [books, persist]
-  )
-
   const deleteBook = useCallback(
     (id: string) => {
       persist(books.filter((b) => b.id !== id))
@@ -45,5 +37,5 @@ export function useBooks() {
     [books, persist]
   )
 
-  return { books, addBook, updateBook, updateStatus, deleteBook }
+  return { books, addBook, updateBook, deleteBook }
 }

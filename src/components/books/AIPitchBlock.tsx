@@ -5,6 +5,7 @@ interface AIPitchBlockProps {
   streamingText?: string
   isGenerating: boolean
   hasApiKey: boolean
+  hasTasteProfile: boolean
   onGenerate: () => void
 }
 
@@ -13,22 +14,25 @@ export function AIPitchBlock({
   streamingText,
   isGenerating,
   hasApiKey,
+  hasTasteProfile,
   onGenerate,
 }: AIPitchBlockProps) {
   const displayText = isGenerating ? streamingText : pitch
 
   if (!displayText && !isGenerating) {
+    let hint = 'why should I read this?'
+    if (!hasApiKey) hint = 'add API key to generate pitch'
+    else if (!hasTasteProfile) hint = 'import reading history for a personal pitch'
+
     return (
       <button
         onClick={onGenerate}
         disabled={!hasApiKey}
         className="flex items-center gap-1.5 text-sm font-hand text-ink-faded hover:text-ink-rust transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
-        title={hasApiKey ? 'Generate why-read pitch' : 'Add an API key in Settings first'}
+        title={hint}
       >
         <Sparkles size={13} className="group-hover:text-hi-pink transition-colors" />
-        <span className="underline decoration-dotted underline-offset-2">
-          {hasApiKey ? 'why should I read this?' : 'add API key to generate pitch'}
-        </span>
+        <span className="underline decoration-dotted underline-offset-2">{hint}</span>
       </button>
     )
   }
