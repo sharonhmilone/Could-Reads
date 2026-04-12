@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Plus, Share2, LogOut } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -33,6 +33,14 @@ export default function App() {
   )
 
   const { generatePitch, loadingIds, streamingTexts } = useAIPitch(handlePitchComplete)
+
+  // Auto-generate pitches for any books missing one when owner is logged in
+  useEffect(() => {
+    if (!isOwner || authLoading) return
+    books
+      .filter(b => !b.aiPitch)
+      .forEach(b => generatePitch(b, tasteProfile))
+  }, [isOwner, authLoading, books]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // URL state — computed once at mount
   const [isSuggestView]  = useState(() => new URLSearchParams(window.location.search).has('suggest'))
