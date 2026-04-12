@@ -6,18 +6,18 @@ import type { ViewName } from '@/lib/types'
 interface AppShellProps {
   currentView: ViewName
   onNavigate: (view: ViewName) => void
-  hasApiKey: boolean
   hasTasteProfile: boolean
   isOwner: boolean
+  authLoading: boolean
   children: React.ReactNode
 }
 
 export function AppShell({
   currentView,
   onNavigate,
-  hasApiKey,
   hasTasteProfile,
   isOwner,
+  authLoading,
   children,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -29,9 +29,9 @@ export function AppShell({
         <Sidebar
           currentView={currentView}
           onNavigate={onNavigate}
-          hasApiKey={hasApiKey}
           hasTasteProfile={hasTasteProfile}
           isOwner={isOwner}
+          authLoading={authLoading}
         />
       </div>
 
@@ -50,9 +50,9 @@ export function AppShell({
         <Sidebar
           currentView={currentView}
           onNavigate={(v) => { onNavigate(v); setSidebarOpen(false) }}
-          hasApiKey={hasApiKey}
           hasTasteProfile={hasTasteProfile}
           isOwner={isOwner}
+          authLoading={authLoading}
         />
       </div>
 

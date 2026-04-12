@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { Plus, Share2 } from 'lucide-react'
+import { Plus, Share2, LogOut } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { BookGrid } from '@/components/books/BookGrid'
@@ -7,16 +7,15 @@ import { AddBookDialog } from '@/components/books/AddBookDialog'
 import { FilterBar } from '@/components/filters/FilterBar'
 import { CsvImport } from '@/components/csv/CsvImport'
 import { TasteProfileView } from '@/components/profile/TasteProfileView'
-import { ApiKeyDialog } from '@/components/settings/ApiKeyDialog'
-import { PinDialog } from '@/components/settings/PinDialog'
 import { SuggestView } from '@/components/suggest/SuggestView'
+import { LoginDialog } from '@/components/auth/LoginDialog'
 
 import { useBooks } from '@/hooks/useBooks'
 import { useTasteProfile } from '@/hooks/useTasteProfile'
-import { useApiKey } from '@/hooks/useApiKey'
+import { useAuth } from '@/hooks/useAuth'
 import { useAIPitch } from '@/hooks/useAIPitch'
 
-import { getOwnerName, saveOwnerName, getShareToken, getOwnerPin, saveOwnerPin } from '@/lib/storage'
+import { getOwnerName, saveOwnerName, getShareToken } from '@/lib/storage'
 import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/lib/types'
 
 const OWNER_VIEWS: ViewName[] = ['settings', 'import', 'taste-profile']
@@ -24,7 +23,7 @@ const OWNER_VIEWS: ViewName[] = ['settings', 'import', 'taste-profile']
 export default function App() {
   const { books, addBook, updateBook, deleteBook } = useBooks()
   const { tasteProfile, setTasteProfile } = useTasteProfile()
-  const { apiKey, setApiKey, hasApiKey } = useApiKey()
+  const { user, loading: authLoading, isOwner, signInWithEmail, signOut } = useAuth()
 
   const handlePitchComplete = useCallback(
     (bookId: string, pitch: string, tasteScore: number) => {
@@ -41,44 +40,38 @@ export default function App() {
   const [suggestToken]   = useState(() => new URLSearchParams(window.location.search).get('t') ?? '')
 
   const [ownerName, setOwnerNameState]   = useState(() => getOwnerName())
-  const [ownerPin, setOwnerPinState]     = useState(() => getOwnerPin())
-  const [ownerUnlocked, setOwnerUnlocked] = useState(false)  // session only — resets on reload
 
   const [currentView, setCurrentView] = useState<ViewName>('library')
   const [addOpen, setAddOpen]         = useState(false)
-  const [apiKeyOpen, setApiKeyOpen]   = useState(false)
-  const [pinDialogOpen, setPinDialogOpen] = useState(false)
-  const [pendingView, setPendingView]     = useState<ViewName | null>(null)
+  const [loginOpen, setLoginOpen]     = useState(false)
+  const [pendingView, setPendingView] = useState<ViewName | null>(null)
   const [sortField, setSortField]     = useState<SortField>('dateAdded')
   const [sortDir, setSortDir]         = useState<SortDirection>('desc')
   const [linkCopied, setLinkCopied]   = useState(false)
-
-  // PIN setup local state (settings page)
-  const [newPin, setNewPin]           = useState('')
-  const [pinSaved, setPinSaved]       = useState(false)
 
   // Public suggest view — render without sidebar/shell
   if (isSuggestView) {
     return <SuggestView ownerName={suggestFor} token={suggestToken} onAdd={addBook} />
   }
 
-  // PIN is set and owner hasn't unlocked this session
-  const pinRequired = ownerPin !== '' && !ownerUnlocked
-  const isOwner     = !pinRequired
-
   function handleNavigate(view: ViewName) {
-    if (OWNER_VIEWS.includes(view) && pinRequired) {
+    if (OWNER_VIEWS.includes(view) && !isOwner) {
       setPendingView(view)
-      setPinDialogOpen(true)
+      setLoginOpen(true)
       return
     }
     setCurrentView(view)
   }
 
-  function handlePinUnlock() {
-    setOwnerUnlocked(true)
-    setPinDialogOpen(false)
+  function handleLoginSuccess() {
+    setLoginOpen(false)
     if (pendingView) { setCurrentView(pendingView); setPendingView(null) }
+  }
+
+  async function handleSendLink(email: string) {
+    const result = await signInWithEmail(email)
+    if (!result.error) handleLoginSuccess()
+    return result
   }
 
   function handleSortChange(field: SortField, dir: SortDirection) {
@@ -87,30 +80,11 @@ export default function App() {
 
   function handleGeneratePitch(book: BookRecommendation) {
     if (!isOwner) return
-    if (!hasApiKey) { setApiKeyOpen(true); return }
-    generatePitch(book, apiKey, tasteProfile)
+    generatePitch(book, tasteProfile)
   }
 
   function handleOwnerNameSave(name: string) {
     setOwnerNameState(name); saveOwnerName(name)
-  }
-
-  function handleSavePin() {
-    const trimmed = newPin.trim()
-    if (!trimmed) return
-    saveOwnerPin(trimmed)
-    setOwnerPinState(trimmed)
-    setOwnerUnlocked(true)   // stay unlocked after setting PIN
-    setNewPin('')
-    setPinSaved(true)
-    setTimeout(() => setPinSaved(false), 2000)
-  }
-
-  function handleRemovePin() {
-    if (!confirm('Remove owner PIN? Settings will be accessible to anyone who visits.')) return
-    saveOwnerPin('')
-    setOwnerPinState('')
-    setOwnerUnlocked(false)
   }
 
   function handleCopyShareLink() {
@@ -137,9 +111,9 @@ export default function App() {
     <AppShell
       currentView={currentView}
       onNavigate={handleNavigate}
-      hasApiKey={hasApiKey}
       hasTasteProfile={tasteProfile !== null}
       isOwner={isOwner}
+      authLoading={authLoading}
     >
       {/* ── Library ──────────────────────────────── */}
       {currentView === 'library' && (
@@ -186,7 +160,7 @@ export default function App() {
             tasteProfile={tasteProfile}
             streamingTexts={streamingTexts}
             loadingIds={loadingIds}
-            hasApiKey={hasApiKey && isOwner}
+            hasApiKey={isOwner}
             onGeneratePitch={handleGeneratePitch}
             onDelete={deleteBook}
           />
@@ -212,62 +186,6 @@ export default function App() {
           <h1 className="font-type text-4xl text-ink">
             <span className="hl-yellow">Settings</span>
           </h1>
-
-          {/* Owner PIN */}
-          <div className="paper-card p-5 space-y-3">
-            <h3 className="font-type text-xl text-ink">Owner PIN</h3>
-            <p className="font-hand text-base text-ink-faded">
-              Locks Import and Settings from anyone who doesn't know the PIN.
-            </p>
-            {ownerPin ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#39ff14', boxShadow: '0 0 8px rgba(57,255,20,0.7)' }} />
-                  <span className="font-hand text-base text-ink-faded">PIN is set</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    placeholder="New PIN to change…"
-                    className="paper-input flex-1"
-                  />
-                  <button
-                    onClick={handleSavePin}
-                    disabled={!newPin.trim()}
-                    className="px-3 py-2 font-hand text-base text-ink border-2 border-hi-pink/50 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all disabled:opacity-40"
-                  >
-                    {pinSaved ? 'Saved!' : 'Change'}
-                  </button>
-                </div>
-                <button
-                  onClick={handleRemovePin}
-                  className="font-hand text-sm text-ink-faded/50 hover:text-accent-red transition-colors underline underline-offset-2"
-                >
-                  Remove PIN
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSavePin()}
-                  placeholder="Set a PIN…"
-                  className="paper-input flex-1"
-                />
-                <button
-                  onClick={handleSavePin}
-                  disabled={!newPin.trim()}
-                  className="px-3 py-2 font-hand text-base text-ink border-2 border-hi-pink/50 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all disabled:opacity-40"
-                >
-                  {pinSaved ? 'Saved!' : 'Set PIN'}
-                </button>
-              </div>
-            )}
-          </div>
 
           {/* Owner name */}
           <div className="paper-card p-5 space-y-3">
@@ -299,33 +217,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* API key */}
-          <div className="paper-card p-5 space-y-3">
-            <h3 className="font-type text-xl text-ink">Anthropic API key</h3>
-            <p className="font-hand text-base text-ink-faded">
-              Used to generate taste-match scores and personal pitches. Stored only in your browser.
-            </p>
-            <div className="flex items-center gap-3">
-              <span
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{
-                  background: hasApiKey ? '#39ff14' : '#ff3db4',
-                  boxShadow: hasApiKey ? '0 0 8px rgba(57,255,20,0.7)' : '0 0 8px rgba(255,61,180,0.7)',
-                }}
-              />
-              <span className="font-hand text-base text-ink-faded">
-                {hasApiKey ? 'API key saved ✓' : 'No API key — scoring disabled'}
-              </span>
-            </div>
-            <button
-              onClick={() => setApiKeyOpen(true)}
-              className="px-4 py-2 font-hand text-lg border-2 border-hi-pink/50 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all text-ink"
-              style={{ boxShadow: '0 0 6px rgba(255,61,180,0.15)' }}
-            >
-              {hasApiKey ? 'Update key' : 'Add API key'}
-            </button>
-          </div>
-
           {tasteProfile && (
             <div className="paper-card p-5 space-y-3">
               <h3 className="font-type text-xl text-ink">Taste profile</h3>
@@ -345,16 +236,32 @@ export default function App() {
               </button>
             </div>
           )}
+
+          {/* Sign out */}
+          {user && (
+            <div className="paper-card p-5 space-y-3">
+              <h3 className="font-type text-xl text-ink">Account</h3>
+              <p className="font-hand text-base text-ink-faded">
+                Signed in as <strong>{user.email}</strong>
+              </p>
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-2 px-4 py-2 font-hand text-base text-ink-faded border border-ink/20 rounded-sm hover:bg-paper-dark transition-colors"
+              >
+                <LogOut size={15} />
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <AddBookDialog open={addOpen} onClose={() => setAddOpen(false)} onAdd={addBook} />
-      <ApiKeyDialog open={apiKeyOpen} onClose={() => setApiKeyOpen(false)} currentKey={apiKey} onSave={setApiKey} />
-      {pinDialogOpen && (
-        <PinDialog
-          storedPin={ownerPin}
-          onUnlock={handlePinUnlock}
-          onDismiss={() => { setPinDialogOpen(false); setPendingView(null) }}
+
+      {loginOpen && (
+        <LoginDialog
+          onDismiss={() => { setLoginOpen(false); setPendingView(null) }}
+          onSendLink={handleSendLink}
         />
       )}
     </AppShell>

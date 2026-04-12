@@ -52,10 +52,8 @@ export interface TasteProfile {
 export interface AppState {
   books: BookRecommendation[]
   tasteProfile: TasteProfile | null
-  apiKey: string
   ownerName: string
   shareToken: string   // random token included in the suggest URL — gates the public form
-  ownerPin: string     // PIN required to access Settings and Import; empty = unset
 }
 
 // --- UI State ---

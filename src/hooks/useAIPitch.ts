@@ -25,7 +25,6 @@ export function useAIPitch(
   const generatePitch = useCallback(
     async (
       book: BookRecommendation,
-      apiKey: string,
       tasteProfile: TasteProfile | null
     ) => {
       if (loadingRef.current.has(book.id)) return
@@ -36,7 +35,6 @@ export function useAIPitch(
 
       try {
         const result = await generateWhyReadPitch({
-          apiKey,
           book,
           tasteProfile,
           onChunk: (chunk) => {
@@ -71,7 +69,7 @@ export function useAIPitch(
         })
       }
     },
-    [onPitchComplete]   // no longer depends on loadingIds state
+    [onPitchComplete]
   )
 
   return { generatePitch, loadingIds, streamingTexts }

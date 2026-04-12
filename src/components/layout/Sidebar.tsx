@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils'
 interface SidebarProps {
   currentView: ViewName
   onNavigate: (view: ViewName) => void
-  hasApiKey: boolean
   hasTasteProfile: boolean
   isOwner: boolean
+  authLoading: boolean
 }
 
 const ownerNavItems: { view: ViewName; label: string; Icon: typeof BookOpen }[] = [
@@ -16,7 +16,7 @@ const ownerNavItems: { view: ViewName; label: string; Icon: typeof BookOpen }[] 
   { view: 'settings',      label: 'Settings',     Icon: Settings },
 ]
 
-export function Sidebar({ currentView, onNavigate, hasApiKey, hasTasteProfile, isOwner }: SidebarProps) {
+export function Sidebar({ currentView, onNavigate, hasTasteProfile, isOwner, authLoading }: SidebarProps) {
   return (
     <aside className="w-56 shrink-0 flex flex-col min-h-screen border-r border-ink/10 bg-paper-dark/30 py-6 relative overflow-hidden">
       <div className="coffee-ring pointer-events-none" style={{ bottom: 40, right: -30, width: 100, height: 100, opacity: 0.4 }} />
@@ -62,23 +62,8 @@ export function Sidebar({ currentView, onNavigate, hasApiKey, hasTasteProfile, i
       </nav>
 
       <div className="mt-auto px-5 flex flex-col gap-2">
-        {isOwner && (
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{
-                background: hasApiKey ? '#39ff14' : '#ff3db4',
-                boxShadow: hasApiKey ? '0 0 6px rgba(57,255,20,0.7)' : '0 0 6px rgba(255,61,180,0.7)',
-              }}
-            />
-            <span className="font-hand text-sm text-ink-faded">
-              {hasApiKey ? 'AI ready' : 'no API key'}
-            </span>
-          </div>
-        )}
-
         {/* Always-visible owner access for first-time setup */}
-        {!isOwner && (
+        {!isOwner && !authLoading && (
           <button
             onClick={() => onNavigate('settings')}
             className="font-hand text-sm text-ink-faded/50 hover:text-ink-faded transition-colors text-left underline underline-offset-2 decoration-dotted"

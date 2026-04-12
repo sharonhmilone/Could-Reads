@@ -59,7 +59,6 @@ const seedTasteProfile: TasteProfile = {
 }
 
 const defaultState: AppState = {
-  ownerPin: '',
   books: [
     {
       id: 'seed-katabasis-rfkuang',
@@ -70,7 +69,6 @@ const defaultState: AppState = {
     },
   ],
   tasteProfile: seedTasteProfile,
-  apiKey: '',
   ownerName: '',
   shareToken: '',
 }
@@ -87,10 +85,8 @@ export function loadState(): AppState {
     _cache = {
       books: parsed.books ?? [],
       tasteProfile: parsed.tasteProfile ?? seedTasteProfile,
-      apiKey: parsed.apiKey ?? '',
       ownerName: parsed.ownerName ?? '',
       shareToken: parsed.shareToken ?? '',
-      ownerPin: parsed.ownerPin ?? '',
     }
     return _cache
   } catch {
@@ -120,16 +116,6 @@ export const saveTasteProfile = (p: TasteProfile | null) => updateState('tastePr
 
 export const getOwnerName = (): string       => loadState().ownerName ?? ''
 export const saveOwnerName = (name: string)  => updateState('ownerName', name)
-
-export function getApiKey(): string {
-  const key = loadState().apiKey
-  if (key) return key
-  return (import.meta as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY ?? ''
-}
-export const saveApiKey = (key: string) => updateState('apiKey', key)
-
-export const getOwnerPin  = (): string      => loadState().ownerPin ?? ''
-export const saveOwnerPin = (pin: string)   => updateState('ownerPin', pin)
 
 // Share token — generated once and stored; included in the suggest URL to gate access
 export function getShareToken(): string {
