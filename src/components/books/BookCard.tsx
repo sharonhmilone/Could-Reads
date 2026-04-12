@@ -75,26 +75,17 @@ export function BookCard({
       {/* Author */}
       <p className="font-hand text-lg text-ink-faded mb-2">by {book.author}</p>
 
-      {/* Taste score badge (only when scored) */}
-      {book.tasteScore !== undefined && !isGenerating && (
-        <div className="mb-3">
+      {/* Recommender + score inline */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <p className="font-hand text-sm text-ink-faded">
+          from <strong className="text-ink-brown">{book.recommender.split(' ')[0]}</strong>
+        </p>
+        {book.tasteScore !== undefined && !isGenerating && (
           <TasteScoreBadge score={book.tasteScore} />
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Recommender — first name only */}
-      <p className="font-hand text-sm text-ink-faded mb-2">
-        from <strong className="text-ink-brown">{book.recommender.split(' ')[0]}</strong>
-      </p>
-
-      {/* Friend's note */}
-      {book.friendNote && (
-        <blockquote className="border-l-2 border-ink/20 pl-3 mb-3 italic font-hand text-base text-ink-brown">
-          "{book.friendNote}"
-        </blockquote>
-      )}
-
-      {/* AI pitch */}
+      {/* AI pitch — main content */}
       <AIPitchBlock
         pitch={book.aiPitch}
         streamingText={streamingText}
@@ -103,6 +94,13 @@ export function BookCard({
         hasTasteProfile={hasTasteProfile}
         onGenerate={onGeneratePitch}
       />
+
+      {/* Friend's note — secondary context below pitch */}
+      {book.friendNote && (
+        <blockquote className="border-l-2 border-ink/20 pl-3 mt-3 italic font-hand text-sm text-ink-faded">
+          "{book.friendNote}"
+        </blockquote>
+      )}
 
       {/* Date added */}
       <p className="mt-3 text-xs font-hand text-ink-faded/60 text-right">
