@@ -63,15 +63,10 @@ export default function App() {
     setCurrentView(view)
   }
 
-  function handleLoginSuccess() {
-    setLoginOpen(false)
-    if (pendingView) { setCurrentView(pendingView); setPendingView(null) }
-  }
-
   async function handleSendLink(email: string) {
-    const result = await signInWithEmail(email)
-    if (!result.error) handleLoginSuccess()
-    return result
+    return await signInWithEmail(email)
+    // Dialog shows "check your email" — auth completes when the magic link is clicked,
+    // which redirects back and fires onAuthStateChange to set isOwner = true
   }
 
   function handleSortChange(field: SortField, dir: SortDirection) {
