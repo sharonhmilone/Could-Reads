@@ -15,6 +15,7 @@ const defaultState: AppState = {
   tasteProfile: null,
   apiKey: '',
   ownerName: '',
+  shareToken: '',
 }
 
 // Module-level cache — avoids repeated JSON.parse for reads in the same session
@@ -31,6 +32,7 @@ export function loadState(): AppState {
       tasteProfile: parsed.tasteProfile ?? null,
       apiKey: parsed.apiKey ?? '',
       ownerName: parsed.ownerName ?? '',
+      shareToken: parsed.shareToken ?? '',
     }
     return _cache
   } catch {
@@ -52,14 +54,14 @@ function updateState<K extends keyof AppState>(key: K, value: AppState[K]): void
   saveState({ ...loadState(), [key]: value })
 }
 
-export const getBooks = (): BookRecommendation[]    => loadState().books
+export const getBooks = (): BookRecommendation[]       => loadState().books
 export const saveBooks = (books: BookRecommendation[]) => updateState('books', books)
 
 export const getTasteProfile = (): TasteProfile | null => loadState().tasteProfile
 export const saveTasteProfile = (p: TasteProfile | null) => updateState('tasteProfile', p)
 
-export const getOwnerName = (): string => loadState().ownerName ?? ''
-export const saveOwnerName = (name: string) => updateState('ownerName', name)
+export const getOwnerName = (): string       => loadState().ownerName ?? ''
+export const saveOwnerName = (name: string)  => updateState('ownerName', name)
 
 export function getApiKey(): string {
   const key = loadState().apiKey
@@ -67,3 +69,14 @@ export function getApiKey(): string {
   return (import.meta as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY ?? ''
 }
 export const saveApiKey = (key: string) => updateState('apiKey', key)
+
+// Share token — generated once and stored; included in the suggest URL to gate access
+export function getShareToken(): string {
+  const existing = loadState().shareToken
+  if (existing) return existing
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  updateState('shareToken', token)
+  return token
+}

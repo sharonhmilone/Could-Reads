@@ -15,7 +15,7 @@ import { useTasteProfile } from '@/hooks/useTasteProfile'
 import { useApiKey } from '@/hooks/useApiKey'
 import { useAIPitch } from '@/hooks/useAIPitch'
 
-import { getOwnerName, saveOwnerName } from '@/lib/storage'
+import { getOwnerName, saveOwnerName, getShareToken } from '@/lib/storage'
 import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/lib/types'
 
 export default function App() {
@@ -33,8 +33,9 @@ export default function App() {
   const { generatePitch, loadingIds, streamingTexts } = useAIPitch(handlePitchComplete)
 
   // URL state — computed once at mount
-  const [isSuggestView] = useState(() => new URLSearchParams(window.location.search).has('suggest'))
-  const [suggestFor]    = useState(() => new URLSearchParams(window.location.search).get('for') ?? '')
+  const [isSuggestView]  = useState(() => new URLSearchParams(window.location.search).has('suggest'))
+  const [suggestFor]     = useState(() => new URLSearchParams(window.location.search).get('for') ?? '')
+  const [suggestToken]   = useState(() => new URLSearchParams(window.location.search).get('t') ?? '')
 
   const [ownerName, setOwnerNameState] = useState(() => getOwnerName())
   const [currentView, setCurrentView]  = useState<ViewName>('library')
@@ -46,7 +47,7 @@ export default function App() {
 
   // Public suggest view — render without sidebar/shell
   if (isSuggestView) {
-    return <SuggestView ownerName={suggestFor} onAdd={addBook} />
+    return <SuggestView ownerName={suggestFor} token={suggestToken} onAdd={addBook} />
   }
 
   function handleSortChange(field: SortField, dir: SortDirection) {
@@ -66,7 +67,7 @@ export default function App() {
 
   function handleCopyShareLink() {
     const base   = `${window.location.origin}${window.location.pathname}`
-    const params = new URLSearchParams({ suggest: '1' })
+    const params = new URLSearchParams({ suggest: '1', t: getShareToken() })
     if (ownerName) params.set('for', ownerName)
     navigator.clipboard.writeText(`${base}?${params}`).then(() => {
       setLinkCopied(true)

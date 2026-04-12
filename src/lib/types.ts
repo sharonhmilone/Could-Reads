@@ -54,6 +54,7 @@ export interface AppState {
   tasteProfile: TasteProfile | null
   apiKey: string
   ownerName: string
+  shareToken: string   // random token included in the suggest URL — gates the public form
 }
 
 // --- UI State ---

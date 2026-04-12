@@ -4,10 +4,30 @@ import type { BookRecommendation } from '@/lib/types'
 
 interface SuggestViewProps {
   ownerName: string
+  token: string
   onAdd: (book: Omit<BookRecommendation, 'id' | 'dateAdded'>) => Promise<BookRecommendation>
 }
 
-export function SuggestView({ ownerName, onAdd }: SuggestViewProps) {
+export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
+        <div className="paper-card p-8 text-center max-w-sm space-y-3" style={{ transform: 'rotate(-0.5deg)' }}>
+          <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(1deg)' }} />
+          <h2 className="font-type text-2xl text-ink">
+            Could <span className="hl-pink">Reads</span>
+          </h2>
+          <p className="font-hand text-lg text-ink-faded">
+            You need a personal invite link to suggest books here.
+          </p>
+          <p className="font-hand text-sm text-ink-faded/60">
+            Ask the list owner to share their link with you.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const [title, setTitle]       = useState('')
   const [author, setAuthor]     = useState('')
   const [yourName, setYourName] = useState('')
