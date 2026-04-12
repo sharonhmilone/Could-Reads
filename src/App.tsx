@@ -103,11 +103,14 @@ export default function App() {
         <div>
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="font-type text-4xl text-ink leading-tight">
-                Could <span className="hl-pink">Reads</span>
-              </h1>
+              <div
+                className="font-type text-7xl leading-none"
+                style={{ color: '#ff3db4', textShadow: '0 0 16px rgba(255,61,180,0.3)' }}
+              >
+                {books.length}
+              </div>
               <p className="font-hand text-lg text-ink-faded">
-                {books.length} book{books.length !== 1 ? 's' : ''} from friends
+                book{books.length !== 1 ? 's' : ''} from friends
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
