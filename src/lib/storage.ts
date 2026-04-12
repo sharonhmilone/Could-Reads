@@ -86,7 +86,7 @@ export function loadState(): AppState {
     const parsed = JSON.parse(raw) as Partial<AppState>
     _cache = {
       books: parsed.books ?? [],
-      tasteProfile: parsed.tasteProfile ?? null,
+      tasteProfile: parsed.tasteProfile ?? seedTasteProfile,
       apiKey: parsed.apiKey ?? '',
       ownerName: parsed.ownerName ?? '',
       shareToken: parsed.shareToken ?? '',
