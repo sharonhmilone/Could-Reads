@@ -39,37 +39,38 @@ export function BookCard({
           <span className={palette.hlClass}>{book.title}</span>
         </h2>
 
-        <div className="relative shrink-0 mt-0.5">
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className="p-1 rounded hover:bg-paper-dark transition-colors text-ink-faded hover:text-ink"
-          >
-            <MoreHorizontal size={16} />
-          </button>
+        {hasApiKey && (
+          <div className="relative shrink-0 mt-0.5">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="p-1 rounded hover:bg-paper-dark transition-colors text-ink-faded hover:text-ink"
+            >
+              <MoreHorizontal size={16} />
+            </button>
 
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-7 z-20 paper-card py-1 min-w-32 shadow-paper-lg animate-fade-in">
-                <button
-                  onClick={() => { onGeneratePitch(); setMenuOpen(false) }}
-                  disabled={!hasApiKey}
-                  className="w-full text-left px-3 py-1.5 font-hand text-base text-ink-blue hover:bg-paper-dark transition-colors flex items-center gap-2 disabled:opacity-40"
-                >
-                  <RefreshCw size={12} />
-                  Regenerate pitch
-                </button>
-                <button
-                  onClick={() => { onDelete(); setMenuOpen(false) }}
-                  className="w-full text-left px-3 py-1.5 font-hand text-base text-accent-red hover:bg-paper-dark transition-colors flex items-center gap-2"
-                >
-                  <Trash2 size={12} />
-                  Remove
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-7 z-20 paper-card py-1 min-w-32 shadow-paper-lg animate-fade-in">
+                  <button
+                    onClick={() => { onGeneratePitch(); setMenuOpen(false) }}
+                    className="w-full text-left px-3 py-1.5 font-hand text-base text-ink-blue hover:bg-paper-dark transition-colors flex items-center gap-2"
+                  >
+                    <RefreshCw size={12} />
+                    Regenerate pitch
+                  </button>
+                  <button
+                    onClick={() => { onDelete(); setMenuOpen(false) }}
+                    className="w-full text-left px-3 py-1.5 font-hand text-base text-accent-red hover:bg-paper-dark transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={12} />
+                    Remove
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Author */}
