@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Caveat', cursive;
+  }
+
+  body {
+    @apply bg-paper text-ink;
+    background-image:
+      radial-gradient(ellipse at 15% 25%, rgba(180, 140, 80, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 75%, rgba(140, 100, 50, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(200, 160, 90, 0.04) 0%, transparent 70%);
+    min-height: 100vh;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  /* ── Paper cards ─────────────────────────────── */
+  .paper-card {
+    @apply bg-paper-light shadow-paper rounded-sm;
+    background-image:
+      radial-gradient(ellipse at 90% 10%, rgba(180,140,80,0.05) 0%, transparent 40%),
+      radial-gradient(ellipse at 10% 90%, rgba(160,120,60,0.04) 0%, transparent 40%);
+    border: 1px solid rgba(44, 24, 16, 0.12);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .paper-card:hover {
+    @apply shadow-paper-lifted;
+  }
+
+  /* ── Neon highlighter marks ──────────────────── */
+  /* Used as text backgrounds — like dragging a neon Sharpie */
+  .hl-yellow {
+    background: rgba(255, 229, 0, 0.45);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+  .hl-pink {
+    background: rgba(255, 61, 180, 0.35);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+  .hl-green {
+    background: rgba(57, 255, 20, 0.35);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+  .hl-cyan {
+    background: rgba(0, 229, 255, 0.35);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+  .hl-orange {
+    background: rgba(255, 109, 0, 0.35);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+  .hl-purple {
+    background: rgba(196, 0, 255, 0.25);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 2px;
+  }
+
+  /* ── Status stamps (rubber-stamp look) ────────── */
+  .stamp {
+    @apply inline-block border-2 rounded-sm px-2 py-0.5 font-type text-xs tracking-widest uppercase;
+    transform: rotate(-2.5deg);
+    opacity: 0.9;
+  }
+
+  .stamp-want {
+    @apply stamp border-hi-pink text-hi-pink;
+    background: rgba(255, 61, 180, 0.12);
+    box-shadow: 0 0 6px rgba(255, 61, 180, 0.3);
+  }
+  .stamp-reading {
+    @apply stamp border-hi-cyan text-hi-cyan;
+    background: rgba(0, 229, 255, 0.1);
+    box-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+    color: #0090aa;
+    border-color: #00b8d4;
+  }
+  .stamp-done {
+    @apply stamp border-hi-green text-hi-green;
+    background: rgba(57, 255, 20, 0.1);
+    box-shadow: 0 0 6px rgba(57, 255, 20, 0.3);
+    color: #2a8a10;
+    border-color: #39ff14;
+  }
+  .stamp-skipped {
+    @apply stamp border-ink-faded text-ink-faded;
+    background: rgba(122, 106, 90, 0.08);
+  }
+
+  /* ── Neon highlighted number/stat ────────────── */
+  .stat-glow {
+    @apply font-hand font-bold;
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  /* ── Tape strip decoration ───────────────────── */
+  .tape {
+    @apply absolute;
+    width: 60px;
+    height: 18px;
+    border-radius: 2px;
+    transform: rotate(-1.5deg);
+    background: rgba(255, 229, 0, 0.5);
+    border: 1px solid rgba(255, 229, 0, 0.4);
+    box-shadow: 0 0 4px rgba(255, 229, 0, 0.4);
+  }
+
+  /* ── Coffee stain decoration ─────────────────── */
+  .coffee-ring {
+    @apply absolute rounded-full pointer-events-none;
+    border: 2px solid rgba(196, 168, 130, 0.35);
+    width: 80px;
+    height: 80px;
+    box-shadow:
+      inset 0 0 0 1px rgba(196, 168, 130, 0.15),
+      0 0 0 1px rgba(196, 168, 130, 0.08);
+  }
+
+  /* ── Paper inputs ────────────────────────────── */
+  .paper-input {
+    @apply bg-transparent border-0 border-b-2 border-ink-faded/40 rounded-none px-1 py-1.5;
+    @apply font-hand text-xl text-ink focus:outline-none;
+    @apply transition-colors duration-150;
+    border-bottom-color: rgba(122, 106, 90, 0.4);
+  }
+  .paper-input:focus {
+    border-bottom-color: #ff3db4;
+    box-shadow: 0 2px 0 0 rgba(255, 61, 180, 0.25);
+  }
+
+  /* ── Tag chip ────────────────────────────────── */
+  .tag-chip {
+    @apply inline-block px-2 py-0.5 text-sm font-hand rounded-sm;
+    background: rgba(44, 24, 16, 0.08);
+    border: 1px solid rgba(44, 24, 16, 0.15);
+    transform: rotate(-0.5deg);
+  }
+
+  /* ── Sidebar nav ─────────────────────────────── */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all duration-150;
+    @apply text-ink-brown font-hand text-xl rounded-sm;
+  }
+  .nav-item:hover {
+    background: rgba(255, 229, 0, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 229, 0, 0.3);
+    transform: translateX(3px) rotate(0.3deg);
+  }
+  .nav-item.active {
+    background: rgba(255, 61, 180, 0.15);
+    border-left: 3px solid #ff3db4;
+    box-shadow: inset 0 0 8px rgba(255, 61, 180, 0.1), 0 0 4px rgba(255, 61, 180, 0.15);
+    transform: translateX(1px);
+    color: #2c1810;
+  }
+
+  /* ── Lined paper ─────────────────────────────── */
+  .lined {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      rgba(44, 24, 16, 0.07) 27px,
+      rgba(44, 24, 16, 0.07) 28px
+    );
+    background-attachment: local;
+    line-height: 28px;
+  }
+
+  /* ── Scrollbar ───────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(44, 24, 16, 0.05); }
+  ::-webkit-scrollbar-thumb { background: rgba(44, 24, 16, 0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 61, 180, 0.4); }
+}
+
+@layer utilities {
+  .font-hand { font-family: 'Caveat', cursive; }
+  .font-type { font-family: 'Special Elite', cursive; }
+}
