@@ -8,6 +8,7 @@ interface AppShellProps {
   onNavigate: (view: ViewName) => void
   hasApiKey: boolean
   hasTasteProfile: boolean
+  isOwner: boolean
   children: React.ReactNode
 }
 
@@ -16,6 +17,7 @@ export function AppShell({
   onNavigate,
   hasApiKey,
   hasTasteProfile,
+  isOwner,
   children,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -29,6 +31,7 @@ export function AppShell({
           onNavigate={onNavigate}
           hasApiKey={hasApiKey}
           hasTasteProfile={hasTasteProfile}
+          isOwner={isOwner}
         />
       </div>
 
@@ -49,6 +52,7 @@ export function AppShell({
           onNavigate={(v) => { onNavigate(v); setSidebarOpen(false) }}
           hasApiKey={hasApiKey}
           hasTasteProfile={hasTasteProfile}
+          isOwner={isOwner}
         />
       </div>
 

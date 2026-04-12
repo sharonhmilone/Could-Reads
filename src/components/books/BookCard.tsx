@@ -82,9 +82,9 @@ export function BookCard({
         </div>
       )}
 
-      {/* Recommender */}
+      {/* Recommender — first name only */}
       <p className="font-hand text-sm text-ink-faded mb-2">
-        from <strong className="text-ink-brown">{book.recommender}</strong>
+        from <strong className="text-ink-brown">{book.recommender.split(' ')[0]}</strong>
       </p>
 
       {/* Friend's note */}

@@ -91,12 +91,15 @@ export default function App() {
     return sortDir === 'asc' ? cmp : -cmp
   }), [books, sortField, sortDir])
 
+  const isOwner = hasApiKey || ownerName !== ''
+
   return (
     <AppShell
       currentView={currentView}
       onNavigate={setCurrentView}
       hasApiKey={hasApiKey}
       hasTasteProfile={tasteProfile !== null}
+      isOwner={isOwner}
     >
       {/* ── Library ──────────────────────────────── */}
       {currentView === 'library' && (

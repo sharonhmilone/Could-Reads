@@ -78,7 +78,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
             </p>
           )}
           <p className="font-hand text-lg text-ink-faded mt-2">
-            suggest a book they could read
+            suggest a book I could read
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
 
               <div>
                 <label className="block font-hand text-sm text-ink-faded mb-1 uppercase tracking-wide">
-                  Why they'd love it <span className="normal-case">(optional)</span>
+                  Why would {ownerName || 'they'} love it <span className="normal-case">(optional)</span>
                 </label>
                 <textarea
                   value={note}
