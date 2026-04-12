@@ -21,15 +21,17 @@ export function AIPitchBlock({
   const displayText = (isGenerating && streamingText) ? streamingText : pitch
 
   if (!displayText && !isGenerating) {
-    let hint = 'why should I read this?'
-    if (!hasApiKey) hint = 'add API key to generate pitch'
-    else if (!hasTasteProfile) hint = 'import reading history for a personal pitch'
+    // Visitors see nothing — only owner can generate
+    if (!hasApiKey) return null
+
+    const hint = !hasTasteProfile
+      ? 'import reading history for a personal pitch'
+      : 'why should I read this?'
 
     return (
       <button
         onClick={onGenerate}
-        disabled={!hasApiKey}
-        className="flex items-center gap-1.5 text-sm font-hand text-ink-faded hover:text-ink-rust transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 text-sm font-hand text-ink-faded hover:text-ink-rust transition-colors group"
         title={hint}
       >
         <Sparkles size={13} className="group-hover:text-hi-pink transition-colors" />
@@ -53,11 +55,10 @@ export function AIPitchBlock({
           )}
         </p>
       </div>
-      {!isGenerating && pitch && (
+      {!isGenerating && pitch && hasApiKey && (
         <button
           onClick={onGenerate}
-          disabled={!hasApiKey}
-          className="mt-1 text-xs font-hand text-ink-faded/60 hover:text-ink-faded underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-40"
+          className="mt-1 text-xs font-hand text-ink-faded/60 hover:text-ink-faded underline decoration-dotted underline-offset-2 transition-colors"
         >
           regenerate
         </button>
