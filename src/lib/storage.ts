@@ -8,7 +8,7 @@ const defaultState: AppState = {
       id: 'seed-katabasis-rfkuang',
       title: 'Katabasis',
       author: 'R.F. Kuang',
-      recommender: 'Sharon',
+      recommender: 'Kt',
       dateAdded: '2026-04-12T00:00:00.000Z',
     },
   ],
