@@ -66,6 +66,9 @@ export function AppShell({
           >
             <Menu size={20} className="text-ink-brown" />
           </button>
+          <span className="font-type text-xl text-ink">
+            Could <span className="hl-pink" style={{ textShadow: '0 0 6px rgba(255,61,180,0.35)' }}>Reads</span>
+          </span>
         </div>
 
         <div className="flex-1 p-4 md:p-8 max-w-5xl w-full mx-auto">

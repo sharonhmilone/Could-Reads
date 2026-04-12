@@ -31,10 +31,6 @@ export function BookGrid({
           </div>
         </div>
 
-        <p className="font-hand text-base text-ink-faded">
-          books friends send me
-        </p>
-
         <p className="font-hand text-lg text-ink-faded leading-relaxed max-w-xs">
           <span className="hl-yellow">recommend a book</span> I could read and see a summary of whether I'd love it or hate it
         </p>
