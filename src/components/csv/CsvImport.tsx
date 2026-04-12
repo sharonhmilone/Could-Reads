@@ -23,13 +23,12 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
   const [headers, setHeaders] = useState<string[]>([])
   const [rawRows, setRawRows] = useState<Record<string, string>[]>([])
   const [columnMap, setColumnMap] = useState<CsvColumnMap>({
-    title: null, author: null, rating: null, genre: null, dateRead: null, shelf: null,
+    title: null, author: null, genre: null, series: null, dateRead: null, shelf: null,
   })
   const [sourceName, setSourceName] = useState('My reading history')
   const [error, setError] = useState<string | null>(null)
   const [builtProfile, setBuiltProfile] = useState<TasteProfile | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const dropRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState(false)
 
   function processText(text: string) {
@@ -80,6 +79,10 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
   }
 
   if (step === 'done' && builtProfile) {
+    const topGenre = builtProfile.topGenres[0]?.genre ?? '—'
+    const topAuthor = builtProfile.topAuthors[0]?.author ?? '—'
+    const topSeries = builtProfile.seriesRead[0]?.series ?? null
+
     return (
       <div className="paper-card p-6 animate-slide-up space-y-4" style={{ transform: 'rotate(0.5deg)' }}>
         <div className="flex items-center gap-3">
@@ -91,32 +94,40 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
             <span className="hl-green">Taste profile built!</span>
           </h3>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { label: 'books imported', value: builtProfile.totalBooksImported },
-            { label: 'books read',     value: builtProfile.totalBooksRead },
-            { label: 'avg rating',     value: builtProfile.averageRating > 0 ? `${builtProfile.averageRating}★` : '—' },
-            { label: 'top genre',      value: builtProfile.topGenres[0]?.genre ?? '—' },
-          ].map(({ label, value }) => (
+            { label: 'books read',   value: builtProfile.totalBooksRead, neon: '#ff3db4' },
+            { label: 'top genre',    value: topGenre,                    neon: '#0090aa' },
+            { label: 'top author',   value: topAuthor,                   neon: '#2a8a10' },
+          ].map(({ label, value, neon }) => (
             <div key={label} className="paper-card p-3 text-center" style={{ transform: 'rotate(-1deg)' }}>
-              <div
-                className="font-type text-2xl text-ink"
-                style={{ color: '#ff3db4', textShadow: '0 0 8px rgba(255,61,180,0.4)' }}
-              >
+              <div className="font-type text-2xl text-ink leading-tight mb-0.5"
+                style={{ color: neon, textShadow: `0 0 8px ${neon}88` }}>
                 {value}
               </div>
               <div className="font-hand text-sm text-ink-faded">{label}</div>
             </div>
           ))}
         </div>
+
+        {topSeries && (
+          <p className="font-hand text-base text-ink-faded">
+            Series you've committed to:{' '}
+            {builtProfile.seriesRead.slice(0, 3).map((s) => (
+              <span key={s.series} className="hl-yellow mr-2">{s.series}</span>
+            ))}
+          </p>
+        )}
+
         <p className="font-hand text-base text-ink-faded">
-          Head to <strong>My Taste</strong> to see the full breakdown, or start generating pitches in your library.
+          Head to <strong>My Taste</strong> to see the full breakdown, or go add books your friends recommended.
         </p>
         <button
           onClick={() => setStep('upload')}
           className="font-hand text-base text-ink-faded underline decoration-dotted underline-offset-2"
         >
-          re-import a different file
+          import a different file
         </button>
       </div>
     )
@@ -127,7 +138,7 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
       <div className="space-y-5 animate-slide-up">
         <div className="paper-card p-4">
           <label className="block font-hand text-sm text-ink-faded mb-1 uppercase tracking-wide">
-            What is this CSV from?
+            What is this list from?
           </label>
           <input
             value={sourceName}
@@ -161,10 +172,7 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
           <button
             onClick={handleBuild}
             className="px-6 py-2.5 font-hand text-lg text-ink border-2 rounded-sm bg-hi-green/10 transition-all"
-            style={{
-              borderColor: '#39ff14',
-              boxShadow: '0 0 8px rgba(57,255,20,0.2)',
-            }}
+            style={{ borderColor: '#39ff14', boxShadow: '0 0 8px rgba(57,255,20,0.2)' }}
           >
             Build my taste profile →
           </button>
@@ -173,7 +181,6 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
     )
   }
 
-  // Step: upload
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -181,24 +188,21 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
           Import your <span className="hl-cyan">reading history</span>
         </h2>
         <p className="font-hand text-lg text-ink-faded">
-          Upload a CSV from Goodreads, StoryGraph, LibraryThing, or your own spreadsheet.
-          I'll build a taste profile so the AI can make personal pitches.
+          Upload a CSV of books you've read. No ratings needed — what you chose to read <em>is</em> the signal.
+          Genre and series columns are the most useful.
         </p>
       </div>
 
       {existingProfile && (
-        <div className="paper-card p-3 flex items-center gap-3">
-          <span
-            className="font-hand text-sm"
-            style={{ color: '#39ff14', textShadow: '0 0 4px rgba(57,255,20,0.4)' }}
-          >
+        <div className="paper-card p-3 flex items-center gap-3 flex-wrap">
+          <span className="font-hand text-sm" style={{ color: '#39ff14', textShadow: '0 0 4px rgba(57,255,20,0.4)' }}>
             ✓ existing profile from {existingProfile.sourceName}
           </span>
           <span className="font-hand text-sm text-ink-faded">
-            ({existingProfile.totalBooksRead} books read)
+            ({existingProfile.totalBooksRead} books)
           </span>
           <span className="font-hand text-xs text-ink-faded/60 ml-auto">
-            importing a new file will replace it
+            importing replaces it
           </span>
         </div>
       )}
@@ -210,19 +214,13 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
             key={m}
             onClick={() => setMode(m)}
             className={`px-4 py-2 font-hand text-lg transition-colors ${
-              mode === m
-                ? 'text-ink border-b-2 border-hi-pink -mb-px'
-                : 'text-ink-faded hover:text-ink'
+              mode === m ? 'text-ink border-b-2 border-hi-pink -mb-px' : 'text-ink-faded hover:text-ink'
             }`}
           >
             {m === 'file' ? (
-              <span className="flex items-center gap-2">
-                <Upload size={15} /> Upload file
-              </span>
+              <span className="flex items-center gap-2"><Upload size={15} /> Upload file</span>
             ) : (
-              <span className="flex items-center gap-2">
-                <ClipboardPaste size={15} /> Paste CSV
-              </span>
+              <span className="flex items-center gap-2"><ClipboardPaste size={15} /> Paste CSV</span>
             )}
           </button>
         ))}
@@ -230,22 +228,19 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
 
       {mode === 'file' ? (
         <div
-          ref={dropRef}
           onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
           className={`paper-card p-12 text-center cursor-pointer transition-all ${
-            dragging ? 'bg-hi-cyan/10 border-hi-cyan/40' : 'hover:bg-paper-dark'
+            dragging ? 'bg-hi-cyan/10' : 'hover:bg-paper-dark'
           }`}
           style={dragging ? { boxShadow: '0 0 16px rgba(0,229,255,0.2)' } : {}}
         >
           <Upload size={36} className="mx-auto mb-3 text-ink-faded/50" strokeWidth={1.5} />
-          <p className="font-hand text-xl text-ink-faded">
-            drop your .csv here, or click to browse
-          </p>
+          <p className="font-hand text-xl text-ink-faded">drop your .csv here, or click to browse</p>
           <p className="font-hand text-sm text-ink-faded/50 mt-1">
-            Goodreads export · StoryGraph · LibraryThing · any spreadsheet
+            any CSV with a title column works — genre and series make the matching smarter
           </p>
           <input
             ref={fileRef}
@@ -283,14 +278,15 @@ export function CsvImport({ onProfileBuilt, existingProfile }: CsvImportProps) {
       )}
 
       <div className="paper-card p-4 space-y-2">
-        <p className="font-type text-base text-ink">How to export from Goodreads:</p>
-        <ol className="font-hand text-base text-ink-faded list-decimal list-inside space-y-0.5">
-          <li>Go to goodreads.com → My Books → Import and Export</li>
-          <li>Click "Export Library" — you'll get a .csv in your downloads</li>
-          <li>Drop it here</li>
-        </ol>
-        <p className="font-hand text-sm text-ink-faded/70">
-          StoryGraph: Settings → Export your data. LibraryThing: Tools → Export data.
+        <p className="font-type text-base text-ink">Ideal CSV columns:</p>
+        <div className="font-hand text-base text-ink-faded space-y-0.5">
+          <p><span className="hl-pink">Title</span> — required</p>
+          <p><span className="hl-yellow">Genre/Category</span> — most useful for matching</p>
+          <p><span className="hl-cyan">Series</span> — shows what you commit to</p>
+          <p><span className="hl-green">Author</span> — recognizes who you return to</p>
+        </div>
+        <p className="font-hand text-sm text-ink-faded/60 pt-1">
+          No ratings column needed. If you read it, it counts.
         </p>
       </div>
     </div>

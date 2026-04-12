@@ -19,12 +19,9 @@ export interface GeneratePitchParams {
 }
 
 /**
- * Streams a personal pitch for the book, then parses a SCORE line at the end.
- * Claude outputs:
- *   <pitch text>
- *   SCORE: 8
- *
- * We strip the SCORE line from the displayed pitch text.
+ * Streams a personal pitch and taste-match score.
+ * Score is based entirely on genre/author/series fit — no star ratings involved.
+ * Claude outputs pitch text followed by: SCORE: X
  */
 export async function generateWhyReadPitch(
   params: GeneratePitchParams
@@ -34,7 +31,7 @@ export async function generateWhyReadPitch(
 
   const tasteContext = tasteProfile
     ? formatTasteProfileForAI(tasteProfile)
-    : 'No reading history — write a generally compelling pitch and score 5.'
+    : 'No reading history provided — write a generally compelling pitch and score 5.'
 
   const friendContext = book.friendNote
     ? `\nTheir friend noted: "${book.friendNote}"`
@@ -44,7 +41,7 @@ export async function generateWhyReadPitch(
 
 Recommended book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2–3 sentence personal pitch for why this reader should read this book. Then on a new line output exactly: SCORE: X (where X is 1–10 for how well this matches their taste — 10 = perfect fit, 1 = very different from what they like). No other text after the score.`
+Write a 2–3 sentence personal pitch for why this reader should read this book, drawing on their genre preferences and authors they've enjoyed. Then on a new line output exactly: SCORE: X (where X is 1–10 measuring how well this book fits their established reading patterns — 10 means it sits squarely in genres and styles they already love, 1 means it's quite different from anything they've read. Do not factor in ratings — they don't rate books, if they read it they liked it). No other text after the score line.`
 
   let accumulated = ''
 
@@ -52,7 +49,7 @@ Write a 2–3 sentence personal pitch for why this reader should read this book.
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 220,
     system:
-      'You are a literary matchmaker. Write brief, personal pitches (2–3 sentences) for why a specific reader should read a book, then output SCORE: X on its own line. Direct, warm, no filler.',
+      'You are a literary matchmaker. You understand a reader purely from what they have chosen to read — genre patterns, authors they return to, series they commit to. Write brief personal pitches (2–3 sentences) then output SCORE: X on its own line. Base the score entirely on genre/style/author fit, not ratings.',
     messages: [{ role: 'user', content: userMessage }],
   })
 
@@ -63,25 +60,16 @@ Write a 2–3 sentence personal pitch for why this reader should read this book.
     ) {
       const chunk = event.delta.text
       accumulated += chunk
-
-      // Only stream visible pitch text — don't stream the SCORE line
-      // Detect when we hit the SCORE line and stop streaming to UI
-      const scoreLine = accumulated.match(/\nSCORE:\s*\d+\s*$/)
-      if (!scoreLine) {
-        // Also avoid streaming a partial "\nSCORE" that's starting to appear
-        const partialScore = accumulated.match(/\nSCORE:?\s*\d*$/)
-        if (!partialScore) {
-          onChunk(chunk)
-        }
+      // Don't stream the SCORE line to the UI
+      const partialScore = accumulated.match(/\nSCORE:?\s*\d*$/)
+      if (!partialScore) {
+        onChunk(chunk)
       }
     }
   }
 
-  // Parse score from the end of accumulated text
   const scoreMatch = accumulated.match(/\nSCORE:\s*(\d+)\s*$/)
   const tasteScore = scoreMatch ? Math.min(10, Math.max(1, parseInt(scoreMatch[1]!, 10))) : 5
-
-  // Strip the SCORE line from the pitch text
   const pitch = accumulated.replace(/\nSCORE:\s*\d+\s*$/, '').trim()
 
   return { pitch, tasteScore }

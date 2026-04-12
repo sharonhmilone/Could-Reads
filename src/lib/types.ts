@@ -19,17 +19,17 @@ export interface BookRecommendation {
 export interface CsvColumnMap {
   title: string | null
   author: string | null
-  rating: string | null
   genre: string | null
+  series: string | null    // series name — great signal for pattern recognition
   dateRead: string | null
-  shelf: string | null
+  shelf: string | null     // for filtering to "read" books if present
 }
 
 export interface BookHistoryRow {
   title: string
   author: string
-  rating: number | null   // 0–5 or null
   genre: string | null
+  series: string | null
   dateRead: string | null
   shelf: string | null
   rawRow: Record<string, string>
@@ -38,13 +38,11 @@ export interface BookHistoryRow {
 // --- Taste Profile ---
 
 export interface TasteProfile {
-  totalBooksImported: number
   totalBooksRead: number
-  averageRating: number
   topGenres: Array<{ genre: string; count: number; percentage: number }>
-  topAuthors: Array<{ author: string; count: number; avgRating: number }>
-  ratingDistribution: Record<string, number>
-  highlyRatedBooks: BookHistoryRow[]
+  topAuthors: Array<{ author: string; count: number }>
+  seriesRead: Array<{ series: string; count: number }>   // series they completed/read deeply
+  sampleBooks: BookHistoryRow[]                          // representative titles for AI context
   importedAt: string
   sourceName: string
 }
