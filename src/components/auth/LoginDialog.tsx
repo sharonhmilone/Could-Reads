@@ -7,7 +7,7 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ onDismiss, onSendLink }: LoginDialogProps) {
-  const [email, setEmail]   = useState('sharonhadden@gmail.com')
+  const [email, setEmail]   = useState('')
   const [sent, setSent]     = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState<string | null>(null)
