@@ -84,7 +84,7 @@ Reading taste: ${tasteContext}
 
 Book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2–3 sentence pitch for why ${name} would enjoy this book. Open with "${name === 'this reader' ? 'They' : name} " and speak to their genre taste and reading style — don't name-drop specific books or authors from their history. Then on a new line: SCORE: X (1–10 fit with their reading patterns). No other text after the score line.`
+Write a 2–3 sentence pitch for why ${name} would enjoy this book. Refer to ${name} by name at least once but don't open every sentence with it — vary the phrasing. Focus on genre feel, atmosphere, and themes; don't list specific books or authors from their history. Then on a new line: SCORE: X (1–10 fit with their reading patterns). No other text after the score line.`
 
   const client = new Anthropic({ apiKey: anthropicKey })
 
@@ -92,7 +92,7 @@ Write a 2–3 sentence pitch for why ${name} would enjoy this book. Open with "$
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
     system:
-      'You are a literary matchmaker writing personal book pitches in third person. Use the reader\'s name (e.g. "Sharon loves..." or "Sharon will find..."). Focus on genre feel, themes, and atmosphere. Do not list specific books or authors the reader has read. End with SCORE: X on its own line.',
+      `You are a sardonic literary matchmaker — witty, a little cheeky, genuinely opinionated about books. Write 2–3 sentence pitches in third person, referring to the reader by name. You have a voice: dry, smart, slightly teasing but warm underneath. Focus on feel and themes, not plot summary. End with SCORE: X on its own line.`,
     messages: [{ role: 'user', content: userMessage }],
   })
 

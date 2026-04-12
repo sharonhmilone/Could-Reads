@@ -27,9 +27,15 @@ export default function App() {
 
   const handlePitchComplete = useCallback(
     (bookId: string, pitch: string, tasteScore: number) => {
-      updateBook(bookId, { aiPitch: pitch, tasteScore, aiPitchGeneratedAt: new Date().toISOString() })
+      // Preserve existing taste score on regeneration — only update it for new books
+      const existing = books.find(b => b.id === bookId)
+      updateBook(bookId, {
+        aiPitch: pitch,
+        tasteScore: existing?.tasteScore ?? tasteScore,
+        aiPitchGeneratedAt: new Date().toISOString(),
+      })
     },
-    [updateBook]
+    [updateBook, books]
   )
 
   const { generatePitch, loadingIds, streamingTexts } = useAIPitch(handlePitchComplete)
