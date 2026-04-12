@@ -8,6 +8,7 @@ import { FilterBar } from '@/components/filters/FilterBar'
 import { CsvImport } from '@/components/csv/CsvImport'
 import { TasteProfileView } from '@/components/profile/TasteProfileView'
 import { ApiKeyDialog } from '@/components/settings/ApiKeyDialog'
+import { PinDialog } from '@/components/settings/PinDialog'
 import { SuggestView } from '@/components/suggest/SuggestView'
 
 import { useBooks } from '@/hooks/useBooks'
@@ -15,8 +16,10 @@ import { useTasteProfile } from '@/hooks/useTasteProfile'
 import { useApiKey } from '@/hooks/useApiKey'
 import { useAIPitch } from '@/hooks/useAIPitch'
 
-import { getOwnerName, saveOwnerName, getShareToken } from '@/lib/storage'
+import { getOwnerName, saveOwnerName, getShareToken, getOwnerPin, saveOwnerPin } from '@/lib/storage'
 import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/lib/types'
+
+const OWNER_VIEWS: ViewName[] = ['settings', 'import', 'taste-profile']
 
 export default function App() {
   const { books, addBook, updateBook, deleteBook } = useBooks()
@@ -37,22 +40,49 @@ export default function App() {
   const [suggestFor]     = useState(() => new URLSearchParams(window.location.search).get('for') ?? '')
   const [suggestToken]   = useState(() => new URLSearchParams(window.location.search).get('t') ?? '')
 
-  const [ownerName, setOwnerNameState] = useState(() => getOwnerName())
-  const [currentView, setCurrentView]  = useState<ViewName>('library')
-  const [addOpen, setAddOpen]          = useState(false)
-  const [apiKeyOpen, setApiKeyOpen]    = useState(false)
-  const [sortField, setSortField]      = useState<SortField>('dateAdded')
-  const [sortDir, setSortDir]          = useState<SortDirection>('desc')
-  const [linkCopied, setLinkCopied]    = useState(false)
+  const [ownerName, setOwnerNameState]   = useState(() => getOwnerName())
+  const [ownerPin, setOwnerPinState]     = useState(() => getOwnerPin())
+  const [ownerUnlocked, setOwnerUnlocked] = useState(false)  // session only — resets on reload
+
+  const [currentView, setCurrentView] = useState<ViewName>('library')
+  const [addOpen, setAddOpen]         = useState(false)
+  const [apiKeyOpen, setApiKeyOpen]   = useState(false)
+  const [pinDialogOpen, setPinDialogOpen] = useState(false)
+  const [pendingView, setPendingView]     = useState<ViewName | null>(null)
+  const [sortField, setSortField]     = useState<SortField>('dateAdded')
+  const [sortDir, setSortDir]         = useState<SortDirection>('desc')
+  const [linkCopied, setLinkCopied]   = useState(false)
+
+  // PIN setup local state (settings page)
+  const [newPin, setNewPin]           = useState('')
+  const [pinSaved, setPinSaved]       = useState(false)
 
   // Public suggest view — render without sidebar/shell
   if (isSuggestView) {
     return <SuggestView ownerName={suggestFor} token={suggestToken} onAdd={addBook} />
   }
 
+  // PIN is set and owner hasn't unlocked this session
+  const pinRequired = ownerPin !== '' && !ownerUnlocked
+  const isOwner     = !pinRequired
+
+  function handleNavigate(view: ViewName) {
+    if (OWNER_VIEWS.includes(view) && pinRequired) {
+      setPendingView(view)
+      setPinDialogOpen(true)
+      return
+    }
+    setCurrentView(view)
+  }
+
+  function handlePinUnlock() {
+    setOwnerUnlocked(true)
+    setPinDialogOpen(false)
+    if (pendingView) { setCurrentView(pendingView); setPendingView(null) }
+  }
+
   function handleSortChange(field: SortField, dir: SortDirection) {
-    setSortField(field)
-    setSortDir(dir)
+    setSortField(field); setSortDir(dir)
   }
 
   function handleGeneratePitch(book: BookRecommendation) {
@@ -61,8 +91,25 @@ export default function App() {
   }
 
   function handleOwnerNameSave(name: string) {
-    setOwnerNameState(name)
-    saveOwnerName(name)
+    setOwnerNameState(name); saveOwnerName(name)
+  }
+
+  function handleSavePin() {
+    const trimmed = newPin.trim()
+    if (!trimmed) return
+    saveOwnerPin(trimmed)
+    setOwnerPinState(trimmed)
+    setOwnerUnlocked(true)   // stay unlocked after setting PIN
+    setNewPin('')
+    setPinSaved(true)
+    setTimeout(() => setPinSaved(false), 2000)
+  }
+
+  function handleRemovePin() {
+    if (!confirm('Remove owner PIN? Settings will be accessible to anyone who visits.')) return
+    saveOwnerPin('')
+    setOwnerPinState('')
+    setOwnerUnlocked(false)
   }
 
   function handleCopyShareLink() {
@@ -77,26 +124,18 @@ export default function App() {
 
   const sortedBooks = useMemo(() => [...books].sort((a, b) => {
     let cmp = 0
-    if (sortField === 'tasteScore') {
-      cmp = (a.tasteScore ?? 0) - (b.tasteScore ?? 0)
-    } else if (sortField === 'dateAdded') {
-      cmp = a.dateAdded.localeCompare(b.dateAdded)
-    } else if (sortField === 'title') {
-      cmp = a.title.localeCompare(b.title)
-    } else if (sortField === 'author') {
-      cmp = a.author.localeCompare(b.author)
-    } else if (sortField === 'recommender') {
-      cmp = a.recommender.localeCompare(b.recommender)
-    }
+    if (sortField === 'tasteScore')       cmp = (a.tasteScore ?? 0) - (b.tasteScore ?? 0)
+    else if (sortField === 'dateAdded')   cmp = a.dateAdded.localeCompare(b.dateAdded)
+    else if (sortField === 'title')       cmp = a.title.localeCompare(b.title)
+    else if (sortField === 'author')      cmp = a.author.localeCompare(b.author)
+    else if (sortField === 'recommender') cmp = a.recommender.localeCompare(b.recommender)
     return sortDir === 'asc' ? cmp : -cmp
   }), [books, sortField, sortDir])
-
-  const isOwner = hasApiKey || ownerName !== ''
 
   return (
     <AppShell
       currentView={currentView}
-      onNavigate={setCurrentView}
+      onNavigate={handleNavigate}
       hasApiKey={hasApiKey}
       hasTasteProfile={tasteProfile !== null}
       isOwner={isOwner}
@@ -138,11 +177,7 @@ export default function App() {
           </div>
 
           {books.length > 0 && (
-            <FilterBar
-              sortField={sortField}
-              sortDir={sortDir}
-              onSortChange={handleSortChange}
-            />
+            <FilterBar sortField={sortField} sortDir={sortDir} onSortChange={handleSortChange} />
           )}
 
           <BookGrid
@@ -160,10 +195,7 @@ export default function App() {
       {/* ── Import ───────────────────────────────── */}
       {currentView === 'import' && (
         <CsvImport
-          onProfileBuilt={(profile) => {
-            setTasteProfile(profile)
-            setCurrentView('taste-profile')
-          }}
+          onProfileBuilt={(profile) => { setTasteProfile(profile); setCurrentView('taste-profile') }}
           existingProfile={tasteProfile}
         />
       )}
@@ -179,6 +211,62 @@ export default function App() {
           <h1 className="font-type text-4xl text-ink">
             <span className="hl-yellow">Settings</span>
           </h1>
+
+          {/* Owner PIN */}
+          <div className="paper-card p-5 space-y-3">
+            <h3 className="font-type text-xl text-ink">Owner PIN</h3>
+            <p className="font-hand text-base text-ink-faded">
+              Locks Import and Settings from anyone who doesn't know the PIN.
+            </p>
+            {ownerPin ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#39ff14', boxShadow: '0 0 8px rgba(57,255,20,0.7)' }} />
+                  <span className="font-hand text-base text-ink-faded">PIN is set</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder="New PIN to change…"
+                    className="paper-input flex-1"
+                  />
+                  <button
+                    onClick={handleSavePin}
+                    disabled={!newPin.trim()}
+                    className="px-3 py-2 font-hand text-base text-ink border-2 border-hi-pink/50 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all disabled:opacity-40"
+                  >
+                    {pinSaved ? 'Saved!' : 'Change'}
+                  </button>
+                </div>
+                <button
+                  onClick={handleRemovePin}
+                  className="font-hand text-sm text-ink-faded/50 hover:text-accent-red transition-colors underline underline-offset-2"
+                >
+                  Remove PIN
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSavePin()}
+                  placeholder="Set a PIN…"
+                  className="paper-input flex-1"
+                />
+                <button
+                  onClick={handleSavePin}
+                  disabled={!newPin.trim()}
+                  className="px-3 py-2 font-hand text-base text-ink border-2 border-hi-pink/50 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all disabled:opacity-40"
+                >
+                  {pinSaved ? 'Saved!' : 'Set PIN'}
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Owner name */}
           <div className="paper-card p-5 space-y-3">
@@ -198,7 +286,7 @@ export default function App() {
           <div className="paper-card p-5 space-y-3">
             <h3 className="font-type text-xl text-ink">Share link</h3>
             <p className="font-hand text-base text-ink-faded">
-              Anyone with this link can suggest a book for your stack. No account needed.
+              Anyone with this link can suggest a book. No account needed.
             </p>
             <button
               onClick={handleCopyShareLink}
@@ -261,6 +349,13 @@ export default function App() {
 
       <AddBookDialog open={addOpen} onClose={() => setAddOpen(false)} onAdd={addBook} />
       <ApiKeyDialog open={apiKeyOpen} onClose={() => setApiKeyOpen(false)} currentKey={apiKey} onSave={setApiKey} />
+      {pinDialogOpen && (
+        <PinDialog
+          storedPin={ownerPin}
+          onUnlock={handlePinUnlock}
+          onDismiss={() => { setPinDialogOpen(false); setPendingView(null) }}
+        />
+      )}
     </AppShell>
   )
 }

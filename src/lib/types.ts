@@ -55,6 +55,7 @@ export interface AppState {
   apiKey: string
   ownerName: string
   shareToken: string   // random token included in the suggest URL — gates the public form
+  ownerPin: string     // PIN required to access Settings and Import; empty = unset
 }
 
 // --- UI State ---

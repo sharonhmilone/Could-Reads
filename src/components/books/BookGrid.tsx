@@ -32,7 +32,7 @@ export function BookGrid({
         </div>
 
         <p className="font-hand text-lg text-ink-faded leading-relaxed max-w-xs">
-          <span className="hl-yellow">recommend a book</span> I could read and see a summary of whether I'd love it or hate it
+          <span className="hl-yellow">recommend a book</span> I could read and see whether I'd love it or hate it
         </p>
       </div>
     )
