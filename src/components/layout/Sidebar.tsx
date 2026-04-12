@@ -42,7 +42,7 @@ export function Sidebar({ currentView, onNavigate, hasTasteProfile, isOwner, aut
           className={cn('nav-item text-left', currentView === 'library' && 'active')}
         >
           <BookOpen size={18} className="shrink-0 opacity-70" />
-          <span>My Stack</span>
+          <span>{isOwner ? 'My Stack' : 'Book Stack'}</span>
         </button>
 
         {/* Owner-only nav */}
