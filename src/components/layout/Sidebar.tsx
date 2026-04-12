@@ -81,9 +81,9 @@ export function Sidebar({ currentView, onNavigate, hasApiKey, hasTasteProfile, i
         {!isOwner && (
           <button
             onClick={() => onNavigate('settings')}
-            className="font-hand text-xs text-ink-faded/30 hover:text-ink-faded/60 transition-colors text-left"
+            className="font-hand text-sm text-ink-faded/50 hover:text-ink-faded transition-colors text-left underline underline-offset-2 decoration-dotted"
           >
-            owner?
+            owner access
           </button>
         )}
       </div>

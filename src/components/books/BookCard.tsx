@@ -95,12 +95,7 @@ export function BookCard({
         onGenerate={onGeneratePitch}
       />
 
-      {/* Friend's note — secondary context below pitch */}
-      {book.friendNote && (
-        <blockquote className="border-l-2 border-ink/20 pl-3 mt-3 italic font-hand text-sm text-ink-faded">
-          "{book.friendNote}"
-        </blockquote>
-      )}
+      {/* Friend note intentionally not shown — stored for AI context only */}
 
       {/* Date added */}
       <p className="mt-3 text-xs font-hand text-ink-faded/60 text-right">
