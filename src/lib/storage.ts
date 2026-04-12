@@ -3,7 +3,15 @@ import type { AppState, BookRecommendation, TasteProfile } from './types'
 const STORAGE_KEY = 'could-reads-v1'
 
 const defaultState: AppState = {
-  books: [],
+  books: [
+    {
+      id: 'seed-katabasis-rfkuang',
+      title: 'Katabasis',
+      author: 'R.F. Kuang',
+      recommender: 'Sharon',
+      dateAdded: '2026-04-12T00:00:00.000Z',
+    },
+  ],
   tasteProfile: null,
   apiKey: '',
   ownerName: '',

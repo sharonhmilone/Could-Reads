@@ -40,7 +40,7 @@ export function AppShell({
         />
       )}
       <div
-        className={`md:hidden fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ${
+        className={`md:hidden fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 bg-paper ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
