@@ -1,5 +1,6 @@
 import type { BookRecommendation, TasteProfile } from './types'
 import { supabase } from './supabase'
+import { getOwnerName } from './storage'
 
 export interface GeneratePitchResult {
   pitch: string
@@ -32,7 +33,7 @@ export async function generateWhyReadPitch(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ book, tasteProfile }),
+    body: JSON.stringify({ book, tasteProfile, ownerName: getOwnerName() || undefined }),
   })
 
   if (!res.ok) {

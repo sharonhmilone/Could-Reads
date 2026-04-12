@@ -6,6 +6,7 @@ export const config = { runtime: 'edge' }
 const supabaseUrl      = process.env.VITE_SUPABASE_URL!
 const serviceRoleKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const anthropicKey     = process.env.ANTHROPIC_API_KEY!
+const shareToken       = process.env.SHARE_TOKEN ?? ''
 
 interface RequestBody {
   book: {
@@ -18,25 +19,42 @@ interface RequestBody {
     totalBooksRead: number
     topGenres: Array<{ genre: string; count: number; percentage: number }>
     topAuthors: Array<{ author: string; count: number }>
-    seriesRead: Array<{ series: string; count: number }>
-    sampleBooks: Array<{ title: string; author: string; genre: string | null; series: string | null }>
     sourceName: string
   } | null
+  ownerName?: string
 }
 
-function formatTasteProfile(profile: RequestBody['tasteProfile']): string {
-  if (!profile) return 'No reading history provided — write a generally compelling pitch and score 5.'
+function formatTasteProfile(profile: RequestBody['tasteProfile'], name: string): string {
+  if (!profile) return `No reading history — write a generally compelling pitch.`
 
-  const genres  = profile.topGenres.slice(0, 5).map(g => `${g.genre} (${g.percentage}%)`).join(', ')
-  const authors = profile.topAuthors.slice(0, 6).map(a => a.author).join(', ')
-  const series  = profile.seriesRead.slice(0, 5).map(s => s.series).join(', ')
-  const samples = profile.sampleBooks.slice(0, 6).map(b => `"${b.title}" by ${b.author}`).join('; ')
+  const genres  = profile.topGenres.slice(0, 3).map(g => `${g.genre} (${g.percentage}%)`).join(', ')
+  const authors = profile.topAuthors.slice(0, 2).map(a => a.author).join(' and ')
 
-  return `${profile.totalBooksRead} books read from ${profile.sourceName}. ` +
+  return `${name} has read ${profile.totalBooksRead} books from ${profile.sourceName}. ` +
     `Top genres: ${genres}. ` +
-    `Favourite authors: ${authors}. ` +
-    `Series committed to: ${series}. ` +
-    `Sample titles: ${samples}.`
+    (authors ? `Tends to love: ${authors}.` : '')
+}
+
+async function verifyAuth(authHeader: string | null): Promise<boolean> {
+  if (!authHeader) return false
+
+  // Owner via Supabase JWT
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    })
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    return !error && user !== null
+  }
+
+  // Suggest form via share token
+  if (authHeader.startsWith('ShareToken ')) {
+    const provided = authHeader.slice(11)
+    return shareToken.length > 0 && provided === shareToken
+  }
+
+  return false
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -44,18 +62,8 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  // Verify Supabase auth JWT
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response('Unauthorized', { status: 401 })
-  }
-  const token = authHeader.slice(7)
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false },
-  })
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-  if (authError || !user) {
+  const authed = await verifyAuth(req.headers.get('Authorization'))
+  if (!authed) {
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -66,23 +74,25 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Bad request', { status: 400 })
   }
 
-  const { book, tasteProfile } = body
-  const tasteContext   = formatTasteProfile(tasteProfile)
-  const friendContext  = book.friendNote ? `\nTheir friend noted: "${book.friendNote}"` : ''
+  const { book, tasteProfile, ownerName } = body
+  const name         = ownerName?.trim() || 'this reader'
+  const tasteContext = formatTasteProfile(tasteProfile, name)
+  const friendContext = book.friendNote ? `\nA friend noted: "${book.friendNote}"` : ''
 
-  const userMessage = `Reading history: ${tasteContext}
+  const userMessage = `Reader: ${name}
+Reading taste: ${tasteContext}
 
-Recommended book: "${book.title}" by ${book.author}.${friendContext}
+Book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2–3 sentence personal pitch for why this reader should read this book, drawing on their genre preferences and authors they've enjoyed. Then on a new line output exactly: SCORE: X (where X is 1–10 measuring how well this book fits their established reading patterns — 10 means it sits squarely in genres and styles they already love, 1 means it's quite different from anything they've read. Do not factor in ratings — they don't rate books, if they read it they liked it). No other text after the score line.`
+Write a 2–3 sentence pitch for why ${name} would enjoy this book. Open with "${name === 'this reader' ? 'They' : name} " and speak to their genre taste and reading style — don't name-drop specific books or authors from their history. Then on a new line: SCORE: X (1–10 fit with their reading patterns). No other text after the score line.`
 
   const client = new Anthropic({ apiKey: anthropicKey })
 
   const stream = client.messages.stream({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 220,
+    max_tokens: 200,
     system:
-      'You are a literary matchmaker. You understand a reader purely from what they have chosen to read — genre patterns, authors they return to, series they commit to. Write brief personal pitches (2–3 sentences) then output SCORE: X on its own line. Base the score entirely on genre/style/author fit, not ratings.',
+      'You are a literary matchmaker writing personal book pitches in third person. Use the reader\'s name (e.g. "Sharon loves..." or "Sharon will find..."). Focus on genre feel, themes, and atmosphere. Do not list specific books or authors the reader has read. End with SCORE: X on its own line.',
     messages: [{ role: 'user', content: userMessage }],
   })
 

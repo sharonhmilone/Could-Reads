@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plus, CheckCircle2 } from 'lucide-react'
+import { Plus, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import type { BookRecommendation } from '@/lib/types'
+import { getTasteProfile } from '@/lib/storage'
 
 interface SuggestViewProps {
   ownerName: string
@@ -35,13 +36,59 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted]   = useState(false)
   const [addedTitle, setAddedTitle] = useState('')
+  const [pitch, setPitch]           = useState('')
+  const [generatingPitch, setGeneratingPitch] = useState(false)
+
+  async function generatePitch(book: BookRecommendation) {
+    setGeneratingPitch(true)
+    try {
+      const res = await fetch('/api/generate-pitch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `ShareToken ${token}`,
+        },
+        body: JSON.stringify({
+          book,
+          tasteProfile: getTasteProfile(),
+          ownerName: ownerName || undefined,
+        }),
+      })
+      if (!res.ok || !res.body) return
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let accumulated = ''
+      let scoreLineStarted = false
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        accumulated += chunk
+        if (!scoreLineStarted) {
+          const tail = accumulated.slice(-20)
+          if (/\nSCORE:?\s*\d*$/.test(tail)) {
+            scoreLineStarted = true
+          } else {
+            setPitch(accumulated)
+          }
+        }
+      }
+      setPitch(accumulated.replace(/\nSCORE:\s*\d+\s*$/, '').trim())
+    } catch {
+      // Pitch generation is best-effort — silently skip on error
+    } finally {
+      setGeneratingPitch(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !author.trim() || !yourName.trim()) return
     setSubmitting(true)
     try {
-      await onAdd({
+      const book = await onAdd({
         title: title.trim(),
         author: author.trim(),
         recommender: yourName.trim(),
@@ -49,6 +96,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
       })
       setAddedTitle(title.trim())
       setSubmitted(true)
+      generatePitch(book)
     } finally {
       setSubmitting(false)
     }
@@ -61,6 +109,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
     setNote('')
     setSubmitted(false)
     setAddedTitle('')
+    setPitch('')
   }
 
   return (
@@ -97,6 +146,31 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
             <p className="font-hand text-lg text-ink-faded">
               <span className="hl-yellow">{addedTitle}</span> has been added to the stack.
             </p>
+
+            {/* AI pitch */}
+            <div className="text-left mt-2">
+              {generatingPitch && !pitch && (
+                <div className="flex items-center gap-2 text-ink-faded font-hand text-sm">
+                  <Loader2 size={13} className="animate-spin text-hi-pink" />
+                  <span>Seeing if {ownerName || 'they'}'d love it…</span>
+                </div>
+              )}
+              {(pitch || (generatingPitch && pitch)) && (
+                <div className="flex items-start gap-2 mt-1">
+                  {generatingPitch
+                    ? <Loader2 size={13} className="mt-1 shrink-0 text-hi-pink animate-spin" />
+                    : <Sparkles size={13} className="mt-1 shrink-0 text-hi-pink opacity-60" />
+                  }
+                  <p className="font-hand text-base text-ink-brown leading-snug text-left">
+                    {pitch}
+                    {generatingPitch && (
+                      <span className="inline-block w-0.5 h-4 bg-hi-pink ml-0.5 animate-blink align-text-bottom" />
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleSuggestAnother}
               className="font-hand text-base text-ink-faded underline underline-offset-2 hover:text-ink transition-colors"
