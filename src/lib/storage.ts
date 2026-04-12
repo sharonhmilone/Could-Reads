@@ -6,24 +6,33 @@ const defaultState: AppState = {
   books: [],
   tasteProfile: null,
   apiKey: '',
+  ownerName: '',
 }
 
+// Module-level cache — avoids repeated JSON.parse for reads in the same session
+let _cache: AppState | null = null
+
 export function loadState(): AppState {
+  if (_cache) return _cache
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { ...defaultState }
+    if (!raw) { _cache = { ...defaultState }; return _cache }
     const parsed = JSON.parse(raw) as Partial<AppState>
-    return {
+    _cache = {
       books: parsed.books ?? [],
       tasteProfile: parsed.tasteProfile ?? null,
       apiKey: parsed.apiKey ?? '',
+      ownerName: parsed.ownerName ?? '',
     }
+    return _cache
   } catch {
-    return { ...defaultState }
+    _cache = { ...defaultState }
+    return _cache
   }
 }
 
 export function saveState(state: AppState): void {
+  _cache = state
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
@@ -31,36 +40,22 @@ export function saveState(state: AppState): void {
   }
 }
 
-export function getBooks(): BookRecommendation[] {
-  return loadState().books
+function updateState<K extends keyof AppState>(key: K, value: AppState[K]): void {
+  saveState({ ...loadState(), [key]: value })
 }
 
-export function saveBooks(books: BookRecommendation[]): void {
-  const state = loadState()
-  saveState({ ...state, books })
-}
+export const getBooks = (): BookRecommendation[]    => loadState().books
+export const saveBooks = (books: BookRecommendation[]) => updateState('books', books)
 
-export function getTasteProfile(): TasteProfile | null {
-  return loadState().tasteProfile
-}
+export const getTasteProfile = (): TasteProfile | null => loadState().tasteProfile
+export const saveTasteProfile = (p: TasteProfile | null) => updateState('tasteProfile', p)
 
-export function saveTasteProfile(profile: TasteProfile | null): void {
-  const state = loadState()
-  saveState({ ...state, tasteProfile: profile })
-}
+export const getOwnerName = (): string => loadState().ownerName ?? ''
+export const saveOwnerName = (name: string) => updateState('ownerName', name)
 
 export function getApiKey(): string {
-  // Prefer localStorage, fall back to env var for local dev convenience
-  const state = loadState()
-  if (state.apiKey) return state.apiKey
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (typeof import.meta !== 'undefined' && (import.meta as any).env
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? ((import.meta as any).env.VITE_ANTHROPIC_API_KEY ?? '')
-    : '')
+  const key = loadState().apiKey
+  if (key) return key
+  return (import.meta as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY ?? ''
 }
-
-export function saveApiKey(key: string): void {
-  const state = loadState()
-  saveState({ ...state, apiKey: key })
-}
+export const saveApiKey = (key: string) => updateState('apiKey', key)

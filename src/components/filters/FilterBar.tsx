@@ -1,19 +1,18 @@
-import type { BookRecommendation, SortDirection, SortField } from '@/lib/types'
+import type { SortDirection, SortField } from '@/lib/types'
 
 interface FilterBarProps {
-  books: BookRecommendation[]
   sortField: SortField
   sortDir: SortDirection
   onSortChange: (field: SortField, dir: SortDirection) => void
 }
 
 const SORT_OPTIONS: { field: SortField; dir: SortDirection; label: string }[] = [
-  { field: 'tasteScore', dir: 'desc', label: 'Best match first' },
-  { field: 'dateAdded',  dir: 'desc', label: 'Newest first' },
-  { field: 'dateAdded',  dir: 'asc',  label: 'Oldest first' },
-  { field: 'title',      dir: 'asc',  label: 'A–Z title' },
-  { field: 'author',     dir: 'asc',  label: 'A–Z author' },
-  { field: 'recommender',dir: 'asc',  label: 'By friend' },
+  { field: 'tasteScore',  dir: 'desc', label: 'Best match first' },
+  { field: 'dateAdded',   dir: 'desc', label: 'Newest first' },
+  { field: 'dateAdded',   dir: 'asc',  label: 'Oldest first' },
+  { field: 'title',       dir: 'asc',  label: 'A–Z title' },
+  { field: 'author',      dir: 'asc',  label: 'A–Z author' },
+  { field: 'recommender', dir: 'asc',  label: 'By friend' },
 ]
 
 export function FilterBar({ sortField, sortDir, onSortChange }: FilterBarProps) {

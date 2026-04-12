@@ -17,7 +17,8 @@ export function AIPitchBlock({
   hasTasteProfile,
   onGenerate,
 }: AIPitchBlockProps) {
-  const displayText = isGenerating ? streamingText : pitch
+  // Show existing pitch text while streaming starts (no blank flash at generation start)
+  const displayText = (isGenerating && streamingText) ? streamingText : pitch
 
   if (!displayText && !isGenerating) {
     let hint = 'why should I read this?'
@@ -56,7 +57,7 @@ export function AIPitchBlock({
         <button
           onClick={onGenerate}
           disabled={!hasApiKey}
-          className="mt-1 text-xs font-hand text-ink-faded/60 hover:text-ink-faded underline decoration-dotted underline-offset-2 transition-colors"
+          className="mt-1 text-xs font-hand text-ink-faded/60 hover:text-ink-faded underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-40"
         >
           regenerate
         </button>

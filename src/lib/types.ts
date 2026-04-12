@@ -20,9 +20,9 @@ export interface CsvColumnMap {
   title: string | null
   author: string | null
   genre: string | null
-  series: string | null    // series name — great signal for pattern recognition
+  series: string | null
   dateRead: string | null
-  shelf: string | null     // for filtering to "read" books if present
+  shelf: string | null
 }
 
 export interface BookHistoryRow {
@@ -32,7 +32,7 @@ export interface BookHistoryRow {
   series: string | null
   dateRead: string | null
   shelf: string | null
-  rawRow: Record<string, string>
+  rawRow?: Record<string, string>  // present during import only, stripped before storage
 }
 
 // --- Taste Profile ---
@@ -41,8 +41,8 @@ export interface TasteProfile {
   totalBooksRead: number
   topGenres: Array<{ genre: string; count: number; percentage: number }>
   topAuthors: Array<{ author: string; count: number }>
-  seriesRead: Array<{ series: string; count: number }>   // series they completed/read deeply
-  sampleBooks: BookHistoryRow[]                          // representative titles for AI context
+  seriesRead: Array<{ series: string; count: number }>
+  sampleBooks: BookHistoryRow[]   // rawRow stripped before storing
   importedAt: string
   sourceName: string
 }
@@ -53,6 +53,7 @@ export interface AppState {
   books: BookRecommendation[]
   tasteProfile: TasteProfile | null
   apiKey: string
+  ownerName: string
 }
 
 // --- UI State ---

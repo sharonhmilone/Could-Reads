@@ -2,8 +2,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { BookRecommendation, TasteProfile } from './types'
 import { formatTasteProfileForAI } from './csv'
 
-function makeClient(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+// Cache client per API key to avoid re-instantiating on every call
+let _client: { key: string; instance: Anthropic } | null = null
+function getClient(apiKey: string): Anthropic {
+  if (_client?.key === apiKey) return _client.instance
+  _client = { key: apiKey, instance: new Anthropic({ apiKey, dangerouslyAllowBrowser: true }) }
+  return _client.instance
 }
 
 export interface GeneratePitchResult {
@@ -18,16 +22,11 @@ export interface GeneratePitchParams {
   onChunk: (text: string) => void
 }
 
-/**
- * Streams a personal pitch and taste-match score.
- * Score is based entirely on genre/author/series fit — no star ratings involved.
- * Claude outputs pitch text followed by: SCORE: X
- */
 export async function generateWhyReadPitch(
   params: GeneratePitchParams
 ): Promise<GeneratePitchResult> {
   const { apiKey, book, tasteProfile, onChunk } = params
-  const client = makeClient(apiKey)
+  const client = getClient(apiKey)
 
   const tasteContext = tasteProfile
     ? formatTasteProfileForAI(tasteProfile)
@@ -44,6 +43,7 @@ Recommended book: "${book.title}" by ${book.author}.${friendContext}
 Write a 2–3 sentence personal pitch for why this reader should read this book, drawing on their genre preferences and authors they've enjoyed. Then on a new line output exactly: SCORE: X (where X is 1–10 measuring how well this book fits their established reading patterns — 10 means it sits squarely in genres and styles they already love, 1 means it's quite different from anything they've read. Do not factor in ratings — they don't rate books, if they read it they liked it). No other text after the score line.`
 
   let accumulated = ''
+  let scoreLineStarted = false
 
   const stream = client.messages.stream({
     model: 'claude-haiku-4-5-20251001',
@@ -60,10 +60,16 @@ Write a 2–3 sentence personal pitch for why this reader should read this book,
     ) {
       const chunk = event.delta.text
       accumulated += chunk
-      // Don't stream the SCORE line to the UI
-      const partialScore = accumulated.match(/\nSCORE:?\s*\d*$/)
-      if (!partialScore) {
-        onChunk(chunk)
+
+      // Only start checking for SCORE once we see a newline — avoids regex on every early chunk.
+      // Once the SCORE line has started, stop forwarding chunks to the UI entirely.
+      if (!scoreLineStarted) {
+        const tail = accumulated.slice(-20)
+        if (/\nSCORE:?\s*\d*$/.test(tail)) {
+          scoreLineStarted = true
+        } else {
+          onChunk(chunk)
+        }
       }
     }
   }

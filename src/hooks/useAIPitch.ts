@@ -1,14 +1,26 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { generateWhyReadPitch } from '@/lib/claude'
 import type { BookRecommendation, TasteProfile } from '@/lib/types'
 
 export function useAIPitch(
   onPitchComplete: (bookId: string, pitch: string, tasteScore: number) => void
 ) {
+  // Use ref for the loading set so generatePitch doesn't get a new reference every time
+  // loadingIds state is a mirror for UI re-renders only
+  const loadingRef = useRef<Set<string>>(new Set())
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
   const [streamingTexts, setStreamingTexts] = useState<Map<string, string>>(new Map())
+
   const accumulators = useRef<Map<string, string>>(new Map())
   const rafIds = useRef<Map<string, number>>(new Map())
+
+  // Cancel all pending RAF callbacks on unmount
+  useEffect(() => {
+    return () => {
+      rafIds.current.forEach((id) => cancelAnimationFrame(id))
+      rafIds.current.clear()
+    }
+  }, [])
 
   const generatePitch = useCallback(
     async (
@@ -16,9 +28,10 @@ export function useAIPitch(
       apiKey: string,
       tasteProfile: TasteProfile | null
     ) => {
-      if (loadingIds.has(book.id)) return
+      if (loadingRef.current.has(book.id)) return
 
-      setLoadingIds((prev) => new Set([...prev, book.id]))
+      loadingRef.current.add(book.id)
+      setLoadingIds(new Set(loadingRef.current))
       accumulators.current.set(book.id, '')
 
       try {
@@ -47,15 +60,18 @@ export function useAIPitch(
       } catch (err) {
         console.error('AI pitch generation failed:', err)
       } finally {
-        setLoadingIds((prev) => {
-          const next = new Set(prev)
+        loadingRef.current.delete(book.id)
+        setLoadingIds(new Set(loadingRef.current))
+        accumulators.current.delete(book.id)
+        // Clean up streaming text entry now that generation is done
+        setStreamingTexts((prev) => {
+          const next = new Map(prev)
           next.delete(book.id)
           return next
         })
-        accumulators.current.delete(book.id)
       }
     },
-    [loadingIds, onPitchComplete]
+    [onPitchComplete]   // no longer depends on loadingIds state
   )
 
   return { generatePitch, loadingIds, streamingTexts }
