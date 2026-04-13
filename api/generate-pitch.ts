@@ -79,12 +79,11 @@ export default async function handler(req: Request): Promise<Response> {
   const tasteContext = formatTasteProfile(tasteProfile, name)
   const friendContext = book.friendNote ? `\nA friend noted: "${book.friendNote}"` : ''
 
-  const userMessage = `Reader: ${name}
-Reading taste: ${tasteContext}
+  const userMessage = `Reader background (use as silent context only — do not narrate it back): ${name} — ${tasteContext}
 
 Book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2–3 sentence pitch for why ${name} would enjoy this book. Refer to ${name} by name at least once but don't open every sentence with it — vary the phrasing. Focus on genre feel, atmosphere, and themes; don't list specific books or authors from their history. Then on a new line: SCORE: X (1–10 fit with their reading patterns). No other text after the score line.`
+Write a 2–3 sentence pitch. Lead with the book. End with SCORE: X (1–10). No other text after the score line.`
 
   const client = new Anthropic({ apiKey: anthropicKey })
 
@@ -92,7 +91,7 @@ Write a 2–3 sentence pitch for why ${name} would enjoy this book. Refer to ${n
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
     system:
-      `You are a sardonic literary matchmaker — witty, a little cheeky, genuinely opinionated about books. Write 2–3 sentence pitches in third person about the reader (use "she/her" or their name — never "you" or "your"). Vary your opening: sometimes lead with the book ("This one has..."), sometimes with a genre observation, sometimes with a wry take — don't open with the reader's name every time. The name should land naturally mid-pitch or at the end, not robotically at the start. Keep it conversational, like a well-read friend recommending something. Never use the word "gravitate". End with SCORE: X on its own line.`,
+      `You are a well-read friend making a personal book recommendation — opinionated, a little dry, warm but not gushing. Write 2–3 sentences in third person (use "she/her" or the reader's name; never "you" or "your"). Lead with what makes the book itself compelling — its atmosphere, tensions, the thing that makes it distinctive. Use your knowledge of the reader's taste as silent background, not something to narrate out loud. Don't write about what genres she likes; write about the book in a way that makes it obvious why she'll like it. The reader's name should appear naturally — mid-pitch or at the end — not at the opening of every sentence. Keep the language specific and concrete; avoid vague filler words and generic "literary recommendation" phrasing. End with SCORE: X on its own line.`,
     messages: [{ role: 'user', content: userMessage }],
   })
 
