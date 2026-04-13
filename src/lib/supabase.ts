@@ -66,7 +66,7 @@ export async function sbFetchBooks(): Promise<BookRecommendation[]> {
     .select(cols)
     .order('date_added', { ascending: false })
   if (error) throw error
-  return (data as DbBook[]).map(fromDb)
+  return (data as unknown as DbBook[]).map(fromDb)
 }
 
 export async function sbInsertBook(book: BookRecommendation): Promise<void> {
