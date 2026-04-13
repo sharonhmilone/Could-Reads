@@ -24,15 +24,10 @@ interface RequestBody {
   ownerName?: string
 }
 
-function formatTasteProfile(profile: RequestBody['tasteProfile'], name: string): string {
-  if (!profile) return `No reading history — write a generally compelling pitch.`
-
-  const genres  = profile.topGenres.slice(0, 3).map(g => `${g.genre} (${g.percentage}%)`).join(', ')
-  const authors = profile.topAuthors.slice(0, 2).map(a => a.author).join(' and ')
-
-  return `${name} has read ${profile.totalBooksRead} books from ${profile.sourceName}. ` +
-    `Top genres: ${genres}. ` +
-    (authors ? `Tends to love: ${authors}.` : '')
+function formatTasteProfile(profile: RequestBody['tasteProfile']): string {
+  if (!profile) return 'No reading history available.'
+  const genres = profile.topGenres.slice(0, 3).map(g => g.genre).join(', ')
+  return `Reads mostly: ${genres}.`
 }
 
 async function verifyAuth(authHeader: string | null): Promise<boolean> {
@@ -75,15 +70,15 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const { book, tasteProfile, ownerName } = body
-  const name         = ownerName?.trim() || 'this reader'
-  const tasteContext = formatTasteProfile(tasteProfile, name)
-  const friendContext = book.friendNote ? `\nA friend noted: "${book.friendNote}"` : ''
+  const name         = ownerName?.trim() || 'she'
+  const tasteContext = formatTasteProfile(tasteProfile)
+  const friendContext = book.friendNote ? ` A friend said: "${book.friendNote}"` : ''
 
-  const userMessage = `Reader background (use as silent context only — do not narrate it back): ${name} — ${tasteContext}
+  const userMessage = `Reader taste (for scoring only — do not mention in pitch): ${tasteContext}
 
 Book: "${book.title}" by ${book.author}.${friendContext}
 
-Write a 2–3 sentence pitch. Lead with the book. End with SCORE: X (1–10). No other text after the score line.`
+Write a 2–3 sentence pitch about this book. Then on a new line: SCORE: X (1–10 fit with reader taste). No other text after the score.`
 
   const client = new Anthropic({ apiKey: anthropicKey })
 
@@ -91,7 +86,7 @@ Write a 2–3 sentence pitch. Lead with the book. End with SCORE: X (1–10). No
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
     system:
-      `You are a well-read friend making a personal book recommendation — opinionated, a little dry, warm but not gushing. Write 2–3 sentences in third person (use "she/her" or the reader's name; never "you" or "your"). Lead with what makes the book itself compelling — its atmosphere, tensions, the thing that makes it distinctive. Use your knowledge of the reader's taste as silent background, not something to narrate out loud. Don't write about what genres she likes; write about the book in a way that makes it obvious why she'll like it. The reader's name should appear naturally — mid-pitch or at the end — not at the opening of every sentence. Keep the language specific and concrete; avoid vague filler words and generic "literary recommendation" phrasing. End with SCORE: X on its own line.`,
+      `You are a well-read friend recommending a book. Write 2–3 casual, specific sentences about what makes this book itself good — the vibe, the tension, what's fun or surprising about it. Use "she" or ${JSON.stringify(name)} (never "you" or "your"). Drop the name in naturally if at all — don't open with it, don't force it. Never start with the book title or the author name. No genre labels, no author comparisons, no filler phrases. Sound like a person, not a review.`,
     messages: [{ role: 'user', content: userMessage }],
   })
 
