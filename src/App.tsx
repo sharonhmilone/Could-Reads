@@ -97,8 +97,8 @@ export default function App() {
   }
 
   function handleCopyShareLink() {
-    const base   = `${window.location.origin}${window.location.pathname}`
-    const params = new URLSearchParams({ suggest: '1', t: getShareToken() })
+    const base   = `${window.location.origin}/api/suggest-preview`
+    const params = new URLSearchParams({ t: getShareToken() })
     if (ownerName) params.set('for', ownerName)
     navigator.clipboard.writeText(`${base}?${params}`).then(() => {
       setLinkCopied(true)
