@@ -123,6 +123,7 @@ export default function App() {
       hasTasteProfile={tasteProfile !== null}
       isOwner={isOwner}
       authLoading={authLoading}
+      onSignOut={signOut}
     >
       {/* ── Library ──────────────────────────────── */}
       {currentView === 'library' && (

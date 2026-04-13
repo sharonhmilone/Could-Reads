@@ -9,6 +9,7 @@ interface AppShellProps {
   hasTasteProfile: boolean
   isOwner: boolean
   authLoading: boolean
+  onSignOut: () => void
   children: React.ReactNode
 }
 
@@ -18,6 +19,7 @@ export function AppShell({
   hasTasteProfile,
   isOwner,
   authLoading,
+  onSignOut,
   children,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -32,6 +34,7 @@ export function AppShell({
           hasTasteProfile={hasTasteProfile}
           isOwner={isOwner}
           authLoading={authLoading}
+          onSignOut={onSignOut}
         />
       </div>
 
@@ -53,6 +56,7 @@ export function AppShell({
           hasTasteProfile={hasTasteProfile}
           isOwner={isOwner}
           authLoading={authLoading}
+          onSignOut={onSignOut}
         />
       </div>
 

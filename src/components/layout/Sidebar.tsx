@@ -1,4 +1,4 @@
-import { BookOpen, Upload, User, Settings } from 'lucide-react'
+import { BookOpen, Upload, User, Settings, LogOut } from 'lucide-react'
 import type { ViewName } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +8,7 @@ interface SidebarProps {
   hasTasteProfile: boolean
   isOwner: boolean
   authLoading: boolean
+  onSignOut: () => void
 }
 
 const ownerNavItems: { view: ViewName; label: string; Icon: typeof BookOpen }[] = [
@@ -16,7 +17,7 @@ const ownerNavItems: { view: ViewName; label: string; Icon: typeof BookOpen }[] 
   { view: 'settings',      label: 'Settings',     Icon: Settings },
 ]
 
-export function Sidebar({ currentView, onNavigate, hasTasteProfile, isOwner, authLoading }: SidebarProps) {
+export function Sidebar({ currentView, onNavigate, hasTasteProfile, isOwner, authLoading, onSignOut }: SidebarProps) {
   return (
     <aside className="w-56 shrink-0 flex flex-col min-h-screen border-r border-ink/10 bg-paper-dark/30 py-6 relative overflow-hidden">
       <div className="coffee-ring pointer-events-none" style={{ bottom: 40, right: -30, width: 100, height: 100, opacity: 0.4 }} />
@@ -62,7 +63,15 @@ export function Sidebar({ currentView, onNavigate, hasTasteProfile, isOwner, aut
       </nav>
 
       <div className="mt-auto px-5 flex flex-col gap-2">
-        {/* Always-visible owner access for first-time setup */}
+        {isOwner && (
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-2 font-hand text-sm text-ink-faded/50 hover:text-ink-faded transition-colors text-left"
+          >
+            <LogOut size={13} />
+            sign out
+          </button>
+        )}
         {!isOwner && !authLoading && (
           <button
             onClick={() => onNavigate('settings')}
