@@ -86,6 +86,13 @@ export function BookCard({
         )}
       </div>
 
+      {/* Friend note — owner only */}
+      {hasApiKey && book.friendNote && (
+        <p className="font-hand text-sm text-ink-faded/70 italic mb-3 leading-snug">
+          "{book.friendNote}"
+        </p>
+      )}
+
       {/* AI pitch — main content */}
       <AIPitchBlock
         pitch={book.aiPitch}
