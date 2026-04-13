@@ -19,6 +19,7 @@ interface RequestBody {
     totalBooksRead: number
     topGenres: Array<{ genre: string; count: number; percentage: number }>
     topAuthors: Array<{ author: string; count: number }>
+    seriesRead: Array<{ series: string; count: number }>
     sourceName: string
   } | null
   ownerName?: string
@@ -26,8 +27,9 @@ interface RequestBody {
 
 function formatTasteProfile(profile: RequestBody['tasteProfile']): string {
   if (!profile) return 'No reading history available.'
-  const genres = profile.topGenres.slice(0, 3).map(g => g.genre).join(', ')
-  return `Reads mostly: ${genres}.`
+  const genres = profile.topGenres.slice(0, 4).map(g => `${g.genre} (${g.percentage}%)`).join(', ')
+  const commitsSeries = profile.seriesRead.length > 3
+  return `Reads: ${genres}.${commitsSeries ? ' Commits to series.' : ''}`
 }
 
 async function verifyAuth(authHeader: string | null): Promise<boolean> {
@@ -74,11 +76,11 @@ export default async function handler(req: Request): Promise<Response> {
   const tasteContext = formatTasteProfile(tasteProfile)
   const friendContext = book.friendNote ? ` A friend said: "${book.friendNote}"` : ''
 
-  const userMessage = `Reader taste (for scoring only — do not mention in pitch): ${tasteContext}
+  const userMessage = `Reader: ${name}. ${tasteContext}${friendContext ? ` Friend's note: "${book.friendNote}"` : ''}
 
-Book: "${book.title}" by ${book.author}.${friendContext}
+Book: "${book.title}" by ${book.author}.
 
-Write a 2–3 sentence pitch about this book. Then on a new line: SCORE: X (1–10 fit with reader taste). No other text after the score.`
+Write the pitch. Then on a new line: SCORE: X (1–10 fit with reader taste). No other text after the score.`
 
   const client = new Anthropic({ apiKey: anthropicKey })
 
@@ -86,7 +88,7 @@ Write a 2–3 sentence pitch about this book. Then on a new line: SCORE: X (1–
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
     system:
-      `You are a well-read friend recommending a book. Write 2–3 casual, specific sentences about what makes this book itself good — the vibe, the tension, what's fun or surprising about it. Use "she" or ${JSON.stringify(name)} (never "you" or "your"). Drop the name in naturally if at all — don't open with it, don't force it. Never start with the book title or the author name. No genre labels, no author comparisons, no filler phrases. Sound like a person, not a review.`,
+      `You are a well-read, slightly sardonic friend recommending a book — opinionated, dry, warm but not gushing. Write 2–3 casual, specific sentences about what makes this book good: the vibe, the tension, what's fun or surprising about it. You know this reader well — weave in what you know about her taste as a natural aside the way a friend would ("she's gonna eat this up", "and it's a series, so", "right in her wheelhouse"). Never sound like a review or a genre analysis. Use "she" or the reader's name (never "you" or "your"). Don't always open with the reader's name — sometimes lead with the book, sometimes with an observation, sometimes with the name. Never open with the book title or author name as the first words. Sound like a person, not a recommendation engine.`,
     messages: [{ role: 'user', content: userMessage }],
   })
 
