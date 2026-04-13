@@ -54,11 +54,16 @@ function toDb(book: BookRecommendation): DbBook {
 
 // ── CRUD ─────────────────────────────────────────────────────────────────────
 
+const PUBLIC_COLS = 'id, title, author, recommender, date_added, ai_pitch, taste_score, ai_pitch_generated_at'
+const OWNER_COLS  = PUBLIC_COLS + ', friend_note'
+
 export async function sbFetchBooks(): Promise<BookRecommendation[]> {
   if (!supabase) return []
+  const { data: { session } } = await supabase.auth.getSession()
+  const cols = session ? OWNER_COLS : PUBLIC_COLS
   const { data, error } = await supabase
     .from('books')
-    .select('*')
+    .select(cols)
     .order('date_added', { ascending: false })
   if (error) throw error
   return (data as DbBook[]).map(fromDb)
