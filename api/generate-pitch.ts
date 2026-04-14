@@ -110,8 +110,8 @@ Write the pitch. Then on a new line: SCORE: X (1–10 fit with reader taste). No
         const scoreMatch = fullText.match(/\nSCORE:\s*(\d+)\s*$/)
         const tasteScore = scoreMatch ? Math.min(10, Math.max(1, parseInt(scoreMatch[1]!, 10))) : 5
         const pitch = fullText.replace(/\nSCORE:\s*\d+\s*$/, '').trim()
-        const supa = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
-        await supa.from('books').update({
+        const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+        await supabase.from('books').update({
           ai_pitch: pitch,
           taste_score: tasteScore,
           ai_pitch_generated_at: new Date().toISOString(),
