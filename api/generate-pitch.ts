@@ -32,26 +32,24 @@ function formatTasteProfile(profile: RequestBody['tasteProfile']): string {
   return `Reads: ${genres}.${commitsSeries ? ' Commits to series.' : ''}`
 }
 
-async function verifyAuth(authHeader: string | null): Promise<boolean> {
-  if (!authHeader) return false
+async function verifyAuth(authHeader: string | null): Promise<'owner' | 'share' | null> {
+  if (!authHeader) return null
 
-  // Owner via Supabase JWT
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     })
     const { data: { user }, error } = await supabase.auth.getUser(token)
-    return !error && user !== null
+    return (!error && user !== null) ? 'owner' : null
   }
 
-  // Suggest form via share token
   if (authHeader.startsWith('ShareToken ')) {
     const provided = authHeader.slice(11)
-    return shareToken.length > 0 && provided === shareToken
+    return (shareToken.length > 0 && provided === shareToken) ? 'share' : null
   }
 
-  return false
+  return null
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -59,8 +57,8 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const authed = await verifyAuth(req.headers.get('Authorization'))
-  if (!authed) {
+  const authType = await verifyAuth(req.headers.get('Authorization'))
+  if (!authType) {
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -95,14 +93,31 @@ Write the pitch. Then on a new line: SCORE: X (1–10 fit with reader taste). No
 
   const readable = new ReadableStream({
     async start(controller) {
+      let fullText = ''
       for await (const event of stream) {
         if (
           event.type === 'content_block_delta' &&
           event.delta.type === 'text_delta'
         ) {
           controller.enqueue(encoder.encode(event.delta.text))
+          fullText += event.delta.text
         }
       }
+
+      // For suggest-form submissions: save the pitch so the library shows
+      // the same text the submitter saw, rather than generating a new one later.
+      if (authType === 'share') {
+        const scoreMatch = fullText.match(/\nSCORE:\s*(\d+)\s*$/)
+        const tasteScore = scoreMatch ? Math.min(10, Math.max(1, parseInt(scoreMatch[1]!, 10))) : 5
+        const pitch = fullText.replace(/\nSCORE:\s*\d+\s*$/, '').trim()
+        const supa = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+        await supa.from('books').update({
+          ai_pitch: pitch,
+          taste_score: tasteScore,
+          ai_pitch_generated_at: new Date().toISOString(),
+        }).eq('id', book.id)
+      }
+
       controller.close()
     },
   })
