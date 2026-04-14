@@ -3,6 +3,7 @@ import { Plus, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import type { BookRecommendation } from '@/lib/types'
 import { getTasteProfile } from '@/lib/storage'
 import { sbFetchBooks } from '@/lib/supabase'
+import { BookCard } from '@/components/books/BookCard'
 
 interface SuggestViewProps {
   ownerName: string
@@ -188,24 +189,20 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
 
           {/* Rest of the stack */}
           {stackBooks.length > 0 && (
-            <div className="mt-8 space-y-2">
+            <div className="mt-8 space-y-3">
               <p className="font-hand text-sm text-ink-faded uppercase tracking-wide px-1">
                 the full stack
               </p>
               {stackBooks.map((b) => (
-                <div
+                <BookCard
                   key={b.id}
-                  className="paper-card px-4 py-3 space-y-1"
-                  style={{ borderLeft: '3px solid #c4b49a' }}
-                >
-                  <p className="font-type text-lg leading-tight text-ink">{b.title}</p>
-                  <p className="font-hand text-sm text-ink-faded">by {b.author}</p>
-                  {b.aiPitch && (
-                    <p className="font-hand text-sm text-ink-brown leading-snug pt-0.5">
-                      {b.aiPitch}
-                    </p>
-                  )}
-                </div>
+                  book={b}
+                  isGenerating={false}
+                  hasApiKey={false}
+                  hasTasteProfile={false}
+                  onGeneratePitch={() => {}}
+                  onDelete={() => {}}
+                />
               ))}
             </div>
           )}
