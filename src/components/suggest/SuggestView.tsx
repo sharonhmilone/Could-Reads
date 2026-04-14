@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import type { BookRecommendation } from '@/lib/types'
 import { getTasteProfile } from '@/lib/storage'
+import { sbFetchBooks } from '@/lib/supabase'
 
 interface SuggestViewProps {
   ownerName: string
@@ -38,6 +39,11 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
   const [addedTitle, setAddedTitle] = useState('')
   const [pitch, setPitch]           = useState('')
   const [generatingPitch, setGeneratingPitch] = useState(false)
+  const [stackBooks, setStackBooks] = useState<BookRecommendation[]>([])
+
+  useEffect(() => {
+    sbFetchBooks().then(setStackBooks).catch(() => {})
+  }, [])
 
   async function generatePitch(book: BookRecommendation) {
     setGeneratingPitch(true)
@@ -132,6 +138,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
         </div>
 
         {submitted ? (
+          <>
           <div
             className="paper-card p-8 text-center space-y-4 animate-slide-up"
             style={{ transform: 'rotate(-0.5deg)' }}
@@ -178,6 +185,31 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
               suggest another →
             </button>
           </div>
+
+          {/* Rest of the stack */}
+          {stackBooks.length > 0 && (
+            <div className="mt-8 space-y-2">
+              <p className="font-hand text-sm text-ink-faded uppercase tracking-wide px-1">
+                the full stack
+              </p>
+              {stackBooks.map((b) => (
+                <div
+                  key={b.id}
+                  className="paper-card px-4 py-3 space-y-1"
+                  style={{ borderLeft: '3px solid #c4b49a' }}
+                >
+                  <p className="font-type text-lg leading-tight text-ink">{b.title}</p>
+                  <p className="font-hand text-sm text-ink-faded">by {b.author}</p>
+                  {b.aiPitch && (
+                    <p className="font-hand text-sm text-ink-brown leading-snug pt-0.5">
+                      {b.aiPitch}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          </>
         ) : (
           <div
             className="paper-card p-6 animate-fade-in"
