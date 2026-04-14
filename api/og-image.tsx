@@ -2,23 +2,32 @@ import { ImageResponse } from '@vercel/og'
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(): Promise<Response> {
-  // Load Special Elite so the image matches the app's typewriter aesthetic
-  let fontData: ArrayBuffer | undefined
+async function fetchFont(family: string): Promise<ArrayBuffer | null> {
   try {
     const css = await fetch(
-      'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap',
+      `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&display=swap`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120' } }
     ).then(r => r.text())
-    const fontUrl = css.match(/url\(([^)]+)\)/)?.[1]
-    if (fontUrl) fontData = await fetch(fontUrl).then(r => r.arrayBuffer())
+    const url = css.match(/url\(([^)]+)\)/)?.[1]
+    if (!url) return null
+    return fetch(url).then(r => r.arrayBuffer())
   } catch {
-    // Fall back to browser serif if Google Fonts is unreachable
+    return null
   }
+}
 
-  const fonts = fontData
-    ? [{ name: 'Special Elite', data: fontData, style: 'normal' as const, weight: 400 as const }]
-    : []
+export default async function handler(): Promise<Response> {
+  const [specialEliteData, caveatData] = await Promise.all([
+    fetchFont('Special Elite'),
+    fetchFont('Caveat'),
+  ])
+
+  const fonts: ConstructorParameters<typeof ImageResponse>[1]['fonts'] = []
+  if (specialEliteData) fonts.push({ name: 'Special Elite', data: specialEliteData, style: 'normal', weight: 400 })
+  if (caveatData)       fonts.push({ name: 'Caveat',        data: caveatData,        style: 'normal', weight: 400 })
+
+  const titleFont  = specialEliteData ? 'Special Elite' : 'serif'
+  const handFont   = caveatData       ? 'Caveat'        : 'cursive'
 
   return new ImageResponse(
     (
@@ -30,89 +39,78 @@ export default async function handler(): Promise<Response> {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          padding: '90px 100px',
+          padding: '0 110px',
           position: 'relative',
         }}
       >
-        {/* Coffee ring top-left */}
+        {/* Coffee rings — matches .coffee-ring CSS class */}
         <div style={{
-          position: 'absolute', top: 60, left: 80,
-          width: 110, height: 110, borderRadius: '50%',
-          border: '3px solid #c4b49a', opacity: 0.35, display: 'flex',
+          position: 'absolute', bottom: 50, right: 80,
+          width: 140, height: 140, borderRadius: '50%', display: 'flex',
+          border: '2px solid rgba(196,168,130,0.35)',
+          boxShadow: 'inset 0 0 0 1px rgba(196,168,130,0.15)',
         }} />
-        {/* Coffee ring inner top-left */}
         <div style={{
-          position: 'absolute', top: 82, left: 102,
-          width: 66, height: 66, borderRadius: '50%',
-          border: '1.5px solid #c4b49a', opacity: 0.2, display: 'flex',
+          position: 'absolute', bottom: 75, right: 105,
+          width: 90, height: 90, borderRadius: '50%', display: 'flex',
+          border: '1.5px solid rgba(196,168,130,0.2)',
+        }} />
+        <div style={{
+          position: 'absolute', top: 60, left: 70,
+          width: 100, height: 100, borderRadius: '50%', display: 'flex',
+          border: '2px solid rgba(196,168,130,0.35)',
+          boxShadow: 'inset 0 0 0 1px rgba(196,168,130,0.15)',
+        }} />
+        <div style={{
+          position: 'absolute', top: 83, left: 93,
+          width: 54, height: 54, borderRadius: '50%', display: 'flex',
+          border: '1.5px solid rgba(196,168,130,0.2)',
         }} />
 
-        {/* Coffee ring bottom-right */}
-        <div style={{
-          position: 'absolute', bottom: 55, right: 90,
-          width: 150, height: 150, borderRadius: '50%',
-          border: '3px solid #c4b49a', opacity: 0.3, display: 'flex',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: 80, right: 115,
-          width: 100, height: 100, borderRadius: '50%',
-          border: '1.5px solid #c4b49a', opacity: 0.18, display: 'flex',
-        }} />
-
-        {/* Title row */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px', marginBottom: '28px' }}>
+        {/* Logo — mirrors Sidebar.tsx exactly, scaled up */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '16px' }}>
           <span style={{
-            fontSize: 128,
-            fontFamily: fontData ? 'Special Elite' : 'serif',
+            fontFamily: titleFont,
+            fontSize: 120,
             color: '#2c2416',
             lineHeight: 1,
           }}>
             Could
           </span>
           <span style={{
-            fontSize: 128,
-            fontFamily: fontData ? 'Special Elite' : 'serif',
+            fontFamily: titleFont,
+            fontSize: 120,
             color: '#2c2416',
             lineHeight: 1,
-            background: 'rgba(255, 61, 180, 0.28)',
-            padding: '0 14px 6px',
+            background: 'rgba(255, 61, 180, 0.35)',
+            padding: '2px 8px 8px',
+            textShadow: '0 0 28px rgba(255,61,180,0.45)',
           }}>
             Reads
           </span>
         </div>
 
-        {/* Tagline */}
+        {/* Tagline — mirrors the Caveat handwriting line in Sidebar */}
         <div style={{
           display: 'flex',
-          fontSize: 46,
-          fontFamily: fontData ? 'Special Elite' : 'serif',
+          fontFamily: handFont,
+          fontSize: 48,
           color: '#7a6a55',
-          marginBottom: '14px',
-          letterSpacing: '0.01em',
+          transform: 'rotate(1deg)',
+          transformOrigin: 'left center',
+          marginLeft: '4px',
         }}>
-          books from friends
+          books friends sent me
         </div>
 
-        {/* Sub-tagline */}
-        <div style={{
-          display: 'flex',
-          fontSize: 28,
-          fontFamily: fontData ? 'Special Elite' : 'serif',
-          color: '#a89880',
-          letterSpacing: '0.02em',
-        }}>
-          with an AI pitch for each one
-        </div>
-
-        {/* Green dot accent */}
+        {/* Neon green dot */}
         <div style={{
           position: 'absolute',
-          bottom: 88,
-          left: 100,
-          width: 16, height: 16, borderRadius: '50%',
+          bottom: 72,
+          left: 110,
+          width: 14, height: 14, borderRadius: '50%', display: 'flex',
           background: '#39ff14',
           boxShadow: '0 0 14px rgba(57,255,20,0.8)',
-          display: 'flex',
         }} />
       </div>
     ),
