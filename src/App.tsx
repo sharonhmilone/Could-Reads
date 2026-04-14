@@ -141,23 +141,27 @@ export default function App() {
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleCopyShareLink}
-                title="Copy public suggest link"
-                className="flex items-center gap-1.5 px-3 py-2.5 font-hand text-base text-ink border border-hi-cyan/40 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all"
-                style={{ boxShadow: '0 0 6px rgba(0,229,255,0.1)' }}
-              >
-                <Share2 size={15} />
-                <span>{linkCopied ? 'Copied!' : 'Share'}</span>
-              </button>
-              <button
-                onClick={() => setAddOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 font-hand text-lg text-ink border-2 border-hi-pink/60 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all"
-                style={{ boxShadow: '0 0 10px rgba(255,61,180,0.2)' }}
-              >
-                <Plus size={18} />
-                <span>Add book</span>
-              </button>
+              {isOwner && (
+                <button
+                  onClick={handleCopyShareLink}
+                  title="Copy public suggest link"
+                  className="flex items-center gap-1.5 px-3 py-2.5 font-hand text-base text-ink border border-hi-cyan/40 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all"
+                  style={{ boxShadow: '0 0 6px rgba(0,229,255,0.1)' }}
+                >
+                  <Share2 size={15} />
+                  <span>{linkCopied ? 'Copied!' : 'Share'}</span>
+                </button>
+              )}
+              {isOwner && (
+                <button
+                  onClick={() => setAddOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 font-hand text-lg text-ink border-2 border-hi-pink/60 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all"
+                  style={{ boxShadow: '0 0 10px rgba(255,61,180,0.2)' }}
+                >
+                  <Plus size={18} />
+                  <span>Add book</span>
+                </button>
+              )}
             </div>
           </div>
 
