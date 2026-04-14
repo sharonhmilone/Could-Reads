@@ -24,7 +24,7 @@ export default function handler(req: Request): Response {
 
   const safeName    = escapeHtml(name)
   const safeRedirect = escapeHtml(redirectUrl)
-  const imageUrl    = `${origin}/api/og-image`
+  const imageUrl    = `${origin}/og-image.png`
 
   const title = safeName
     ? `Suggest a book for ${safeName}`
