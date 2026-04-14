@@ -7,6 +7,15 @@ const BOT_UAS = [
   'iMessage', 'Applebot', 'curl', 'python-requests',
 ]
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export default function handler(req: Request): Response {
   const url    = new URL(req.url)
   const name   = url.searchParams.get('for') ?? ''
@@ -26,11 +35,12 @@ export default function handler(req: Request): Response {
   }
 
   // Bot — serve OG preview HTML
-  const title = name
-    ? `Suggest a book for ${name}`
+  const safeName = escapeHtml(name)
+  const title = safeName
+    ? `Suggest a book for ${safeName}`
     : 'Suggest a book'
-  const description = name
-    ? `${name} is collecting book recommendations on Could Reads. Pin one to her stack.`
+  const description = safeName
+    ? `${safeName} is collecting book recommendations on Could Reads. Pin one to her stack.`
     : 'Pin a book recommendation to this reading stack on Could Reads.'
   const imageUrl = `${origin}/api/og-image`
   const pageUrl  = req.url
