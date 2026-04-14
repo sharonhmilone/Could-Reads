@@ -1,12 +1,5 @@
 export const config = { runtime: 'edge' }
 
-// Social media / messaging bots that scrape OG tags
-const BOT_UAS = [
-  'Twitterbot', 'facebookexternalhit', 'LinkedInBot',
-  'WhatsApp', 'Slackbot', 'TelegramBot', 'Discordbot',
-  'iMessage', 'Applebot', 'curl', 'python-requests',
-]
-
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -20,40 +13,37 @@ export default function handler(req: Request): Response {
   const url    = new URL(req.url)
   const name   = url.searchParams.get('for') ?? ''
   const token  = url.searchParams.get('t')   ?? ''
-  const ua     = req.headers.get('user-agent') ?? ''
   const origin = url.origin
 
-  const isBot = BOT_UAS.some(b => ua.includes(b))
+  // Build the SPA suggest URL that real browsers will land on
+  const dest = new URL(origin)
+  dest.searchParams.set('suggest', '1')
+  if (token) dest.searchParams.set('t', token)
+  if (name)  dest.searchParams.set('for', name)
+  const redirectUrl = dest.toString()
 
-  if (!isBot) {
-    // Regular browser — redirect to the SPA suggest view
-    const dest = new URL(origin)
-    dest.searchParams.set('suggest', '1')
-    if (token) dest.searchParams.set('t', token)
-    if (name)  dest.searchParams.set('for', name)
-    return Response.redirect(dest.toString(), 302)
-  }
+  const safeName    = escapeHtml(name)
+  const safeRedirect = escapeHtml(redirectUrl)
+  const imageUrl    = `${origin}/api/og-image`
 
-  // Bot — serve OG preview HTML
-  const safeName = escapeHtml(name)
   const title = safeName
     ? `Suggest a book for ${safeName}`
     : 'Suggest a book'
   const description = safeName
     ? `${safeName} is collecting book recommendations on Could Reads. Pin one to her stack.`
     : 'Pin a book recommendation to this reading stack on Could Reads.'
-  const imageUrl = `${origin}/api/og-image`
-  const pageUrl  = req.url
 
+  // Serve OG tags to all visitors (crawlers read them, browsers are
+  // redirected immediately via JS + meta-refresh before seeing anything).
   const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8"/>
   <title>${title}</title>
-  <meta property="og:type"        content="website"/>
-  <meta property="og:url"         content="${pageUrl}"/>
-  <meta property="og:title"       content="${title}"/>
-  <meta property="og:description" content="${description}"/>
+  <meta property="og:type"         content="website"/>
+  <meta property="og:url"          content="${escapeHtml(req.url)}"/>
+  <meta property="og:title"        content="${title}"/>
+  <meta property="og:description"  content="${description}"/>
   <meta property="og:image"        content="${imageUrl}"/>
   <meta property="og:image:type"   content="image/png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -62,6 +52,8 @@ export default function handler(req: Request): Response {
   <meta name="twitter:title"       content="${title}"/>
   <meta name="twitter:description" content="${description}"/>
   <meta name="twitter:image"       content="${imageUrl}"/>
+  <meta http-equiv="refresh" content="0;url=${safeRedirect}"/>
+  <script>window.location.replace(${JSON.stringify(redirectUrl)})</script>
 </head>
 <body></body>
 </html>`
