@@ -15,7 +15,8 @@ import { useTasteProfile } from '@/hooks/useTasteProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { useAIPitch } from '@/hooks/useAIPitch'
 
-import { getOwnerName, saveOwnerName, getShareToken } from '@/lib/storage'
+import { getOwnerName, saveOwnerName } from '@/lib/storage'
+import { supabase } from '@/lib/supabase'
 import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/lib/types'
 
 const OWNER_VIEWS: ViewName[] = ['settings', 'import', 'taste-profile']
@@ -62,6 +63,22 @@ export default function App() {
   const [sortField, setSortField]     = useState<SortField>('dateAdded')
   const [sortDir, setSortDir]         = useState<SortDirection>('desc')
   const [linkCopied, setLinkCopied]   = useState(false)
+  const [serverShareToken, setServerShareToken] = useState('')
+
+  // Fetch the canonical share token from the server so the link works from any domain
+  useEffect(() => {
+    if (!isOwner || authLoading) return
+    supabase?.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.access_token) return
+      const res = await fetch('/api/get-share-token', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        const { token } = await res.json() as { token: string }
+        setServerShareToken(token)
+      }
+    }).catch(() => {})
+  }, [isOwner, authLoading])
 
   // Public suggest view — render without sidebar/shell
   if (isSuggestView) {
@@ -97,8 +114,9 @@ export default function App() {
   }
 
   function handleCopyShareLink() {
+    if (!serverShareToken) return
     const base   = `${window.location.origin}/api/suggest-preview`
-    const params = new URLSearchParams({ t: getShareToken() })
+    const params = new URLSearchParams({ t: serverShareToken })
     if (ownerName) params.set('for', ownerName)
     navigator.clipboard.writeText(`${base}?${params}`).then(() => {
       setLinkCopied(true)
@@ -144,8 +162,9 @@ export default function App() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleCopyShareLink}
+                  disabled={!serverShareToken}
                   title="Copy public suggest link"
-                  className="flex items-center gap-1.5 px-3 py-2.5 font-hand text-base text-ink border border-hi-cyan/40 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-2.5 font-hand text-base text-ink border border-hi-cyan/40 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all disabled:opacity-40"
                   style={{ boxShadow: '0 0 6px rgba(0,229,255,0.1)' }}
                 >
                   <Share2 size={15} />
@@ -221,7 +240,8 @@ export default function App() {
             </p>
             <button
               onClick={handleCopyShareLink}
-              className="flex items-center gap-2 px-4 py-2.5 font-hand text-lg text-ink border-2 border-hi-cyan/50 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all"
+              disabled={!serverShareToken}
+              className="flex items-center gap-2 px-4 py-2.5 font-hand text-lg text-ink border-2 border-hi-cyan/50 rounded-sm bg-hi-cyan/10 hover:bg-hi-cyan/20 transition-all disabled:opacity-40"
               style={{ boxShadow: '0 0 6px rgba(0,229,255,0.15)' }}
             >
               <Share2 size={16} />
