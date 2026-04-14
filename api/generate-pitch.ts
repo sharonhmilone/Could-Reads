@@ -74,9 +74,8 @@ export default async function handler(req: Request): Promise<Response> {
   const { book, tasteProfile, ownerName } = body
   const name         = ownerName?.trim() || 'she'
   const tasteContext = formatTasteProfile(tasteProfile)
-  const friendContext = book.friendNote ? ` A friend said: "${book.friendNote}"` : ''
 
-  const userMessage = `Reader: ${name}. ${tasteContext}${friendContext ? ` Friend's note: "${book.friendNote}"` : ''}
+  const userMessage = `Reader: ${name}. ${tasteContext}${book.friendNote ? ` Friend's note: "${book.friendNote}"` : ''}
 
 Book: "${book.title}" by ${book.author}.
 
