@@ -57,6 +57,7 @@ export default function handler(): ImageResponse {
 
         {/* Subtitle */}
         <div style={{
+          display: 'flex',
           fontSize: 40,
           fontFamily: 'serif',
           fontStyle: 'italic',
