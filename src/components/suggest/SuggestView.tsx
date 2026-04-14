@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import type { BookRecommendation } from '@/lib/types'
 import { getTasteProfile } from '@/lib/storage'
@@ -12,25 +12,6 @@ interface SuggestViewProps {
 }
 
 export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
-  if (!token) {
-    return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
-        <div className="paper-card p-8 text-center max-w-sm space-y-3" style={{ transform: 'rotate(-0.5deg)' }}>
-          <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(1deg)' }} />
-          <h2 className="font-type text-2xl text-ink">
-            Could <span className="hl-pink">Reads</span>
-          </h2>
-          <p className="font-hand text-lg text-ink-faded">
-            You need a personal invite link to suggest books here.
-          </p>
-          <p className="font-hand text-sm text-ink-faded/60">
-            Ask the list owner to share their link with you.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   const [title, setTitle]       = useState('')
   const [author, setAuthor]     = useState('')
   const [yourName, setYourName] = useState('')
@@ -41,10 +22,6 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
   const [pitch, setPitch]           = useState('')
   const [generatingPitch, setGeneratingPitch] = useState(false)
   const [stackBooks, setStackBooks] = useState<BookRecommendation[]>([])
-
-  useEffect(() => {
-    sbFetchBooks().then(setStackBooks).catch(() => {})
-  }, [])
 
   async function generatePitch(book: BookRecommendation) {
     setGeneratingPitch(true)
@@ -104,6 +81,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
       setAddedTitle(title.trim())
       setSubmitted(true)
       generatePitch(book)
+      sbFetchBooks().then(setStackBooks).catch(() => {})
     } finally {
       setSubmitting(false)
     }
@@ -117,6 +95,25 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
     setSubmitted(false)
     setAddedTitle('')
     setPitch('')
+  }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
+        <div className="paper-card p-8 text-center max-w-sm space-y-3" style={{ transform: 'rotate(-0.5deg)' }}>
+          <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(1deg)' }} />
+          <h2 className="font-type text-2xl text-ink">
+            Could <span className="hl-pink">Reads</span>
+          </h2>
+          <p className="font-hand text-lg text-ink-faded">
+            You need a personal invite link to suggest books here.
+          </p>
+          <p className="font-hand text-sm text-ink-faded/60">
+            Ask the list owner to share their link with you.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -140,72 +137,72 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
 
         {submitted ? (
           <>
-          <div
-            className="paper-card p-8 text-center space-y-4 animate-slide-up"
-            style={{ transform: 'rotate(-0.5deg)' }}
-          >
-            <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(1deg)' }} />
-            <CheckCircle2
-              size={44}
-              className="mx-auto"
-              style={{ color: '#39ff14', filter: 'drop-shadow(0 0 10px rgba(57,255,20,0.55))' }}
-            />
-            <h2 className="font-type text-2xl text-ink">Pinned!</h2>
-            <p className="font-hand text-lg text-ink-faded">
-              <span className="hl-yellow">{addedTitle}</span> has been added to the stack.
-            </p>
-
-            {/* AI pitch */}
-            <div className="text-left mt-2">
-              {generatingPitch && !pitch && (
-                <div className="flex items-center gap-2 text-ink-faded font-hand text-sm">
-                  <Loader2 size={13} className="animate-spin text-hi-pink" />
-                  <span>Seeing if {ownerName || 'they'}'d love it…</span>
-                </div>
-              )}
-              {(pitch || (generatingPitch && pitch)) && (
-                <div className="flex items-start gap-2 mt-1">
-                  {generatingPitch
-                    ? <Loader2 size={13} className="mt-1 shrink-0 text-hi-pink animate-spin" />
-                    : <Sparkles size={13} className="mt-1 shrink-0 text-hi-pink opacity-60" />
-                  }
-                  <p className="font-hand text-base text-ink-brown leading-snug text-left">
-                    {pitch}
-                    {generatingPitch && (
-                      <span className="inline-block w-0.5 h-4 bg-hi-pink ml-0.5 animate-blink align-text-bottom" />
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleSuggestAnother}
-              className="font-hand text-base text-ink-faded underline underline-offset-2 hover:text-ink transition-colors"
+            <div
+              className="paper-card p-8 text-center space-y-4 animate-slide-up"
+              style={{ transform: 'rotate(-0.5deg)' }}
             >
-              suggest another →
-            </button>
-          </div>
-
-          {/* Rest of the stack */}
-          {stackBooks.length > 0 && (
-            <div className="mt-8 space-y-3">
-              <p className="font-hand text-sm text-ink-faded uppercase tracking-wide px-1">
-                the full stack
+              <div className="tape" style={{ top: -9, left: '50%', transform: 'translateX(-50%) rotate(1deg)' }} />
+              <CheckCircle2
+                size={44}
+                className="mx-auto"
+                style={{ color: '#39ff14', filter: 'drop-shadow(0 0 10px rgba(57,255,20,0.55))' }}
+              />
+              <h2 className="font-type text-2xl text-ink">Pinned!</h2>
+              <p className="font-hand text-lg text-ink-faded">
+                <span className="hl-yellow">{addedTitle}</span> has been added to the stack.
               </p>
-              {stackBooks.map((b) => (
-                <BookCard
-                  key={b.id}
-                  book={b}
-                  isGenerating={false}
-                  hasApiKey={false}
-                  hasTasteProfile={false}
-                  onGeneratePitch={() => {}}
-                  onDelete={() => {}}
-                />
-              ))}
+
+              {/* AI pitch */}
+              <div className="text-left mt-2">
+                {generatingPitch && !pitch && (
+                  <div className="flex items-center gap-2 text-ink-faded font-hand text-sm">
+                    <Loader2 size={13} className="animate-spin text-hi-pink" />
+                    <span>Seeing if {ownerName || 'they'}'d love it…</span>
+                  </div>
+                )}
+                {pitch && (
+                  <div className="flex items-start gap-2 mt-1">
+                    {generatingPitch
+                      ? <Loader2 size={13} className="mt-1 shrink-0 text-hi-pink animate-spin" />
+                      : <Sparkles size={13} className="mt-1 shrink-0 text-hi-pink opacity-60" />
+                    }
+                    <p className="font-hand text-base text-ink-brown leading-snug text-left">
+                      {pitch}
+                      {generatingPitch && (
+                        <span className="inline-block w-0.5 h-4 bg-hi-pink ml-0.5 animate-blink align-text-bottom" />
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleSuggestAnother}
+                className="font-hand text-base text-ink-faded underline underline-offset-2 hover:text-ink transition-colors"
+              >
+                suggest another →
+              </button>
             </div>
-          )}
+
+            {/* Rest of the stack */}
+            {stackBooks.length > 0 && (
+              <div className="mt-8 space-y-3">
+                <p className="font-hand text-sm text-ink-faded uppercase tracking-wide px-1">
+                  the full stack
+                </p>
+                {stackBooks.map((b) => (
+                  <BookCard
+                    key={b.id}
+                    book={b}
+                    isGenerating={false}
+                    hasApiKey={false}
+                    hasTasteProfile={false}
+                    onGeneratePitch={() => {}}
+                    onDelete={() => {}}
+                  />
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <div

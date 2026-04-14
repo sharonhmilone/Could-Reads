@@ -140,8 +140,8 @@ export default function App() {
                 book{books.length !== 1 ? 's' : ''} from friends
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {isOwner && (
+            {isOwner && (
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleCopyShareLink}
                   title="Copy public suggest link"
@@ -151,8 +151,6 @@ export default function App() {
                   <Share2 size={15} />
                   <span>{linkCopied ? 'Copied!' : 'Share'}</span>
                 </button>
-              )}
-              {isOwner && (
                 <button
                   onClick={() => setAddOpen(true)}
                   className="flex items-center gap-2 px-4 py-2.5 font-hand text-lg text-ink border-2 border-hi-pink/60 rounded-sm bg-hi-pink/10 hover:bg-hi-pink/20 transition-all"
@@ -161,8 +159,8 @@ export default function App() {
                   <Plus size={18} />
                   <span>Add book</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {books.length > 0 && (
