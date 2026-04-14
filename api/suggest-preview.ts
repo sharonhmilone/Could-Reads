@@ -27,7 +27,7 @@ export default function handler(req: Request): Response {
   const description = safeName
     ? `${safeName} is collecting book recommendations on Could Reads. Pin one to her stack.`
     : 'Pin a book recommendation to this reading stack on Could Reads.'
-  const imageUrl = `${origin}/og-image.png`
+  const imageUrl = `${origin}/og-image-v2.png`
 
   const html = `<!DOCTYPE html>
 <html>
