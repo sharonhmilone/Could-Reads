@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import type { BookRecommendation } from '@/lib/types'
 import { getTasteProfile } from '@/lib/storage'
-import { sbFetchBooks } from '@/lib/supabase'
+import { describeSupabaseError, sbFetchBooks } from '@/lib/supabase'
 import { BookCard } from '@/components/books/BookCard'
 
 interface SuggestViewProps {
@@ -22,6 +22,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
   const [pitch, setPitch]           = useState('')
   const [generatingPitch, setGeneratingPitch] = useState(false)
   const [stackBooks, setStackBooks] = useState<BookRecommendation[]>([])
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   async function generatePitch(book: BookRecommendation) {
     setGeneratingPitch(true)
@@ -71,6 +72,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
     e.preventDefault()
     if (!title.trim() || !author.trim() || !yourName.trim()) return
     setSubmitting(true)
+    setSubmitError(null)
     try {
       const book = await onAdd({
         title: title.trim(),
@@ -82,6 +84,9 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
       setSubmitted(true)
       generatePitch(book)
       sbFetchBooks().then(setStackBooks).catch(() => {})
+    } catch (err) {
+      // Don't strand the suggester on a form that looks like it did nothing
+      setSubmitError(describeSupabaseError(err))
     } finally {
       setSubmitting(false)
     }
@@ -95,6 +100,7 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
     setSubmitted(false)
     setAddedTitle('')
     setPitch('')
+    setSubmitError(null)
   }
 
   if (!token) {
@@ -278,6 +284,14 @@ export function SuggestView({ ownerName, token, onAdd }: SuggestViewProps) {
                 <Plus size={18} />
                 {submitting ? 'Pinning…' : 'Pin it!'}
               </button>
+
+              {submitError && (
+                <p className="font-hand text-base text-ink-rust text-center leading-snug">
+                  <span className="hl-orange">{submitError}</span>
+                  <br />
+                  <span className="text-sm text-ink-faded">Your suggestion wasn't saved — try again in a bit.</span>
+                </p>
+              )}
             </form>
           </div>
         )}

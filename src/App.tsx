@@ -9,6 +9,7 @@ import { CsvImport } from '@/components/csv/CsvImport'
 import { TasteProfileView } from '@/components/profile/TasteProfileView'
 import { SuggestView } from '@/components/suggest/SuggestView'
 import { LoginDialog } from '@/components/auth/LoginDialog'
+import { ConnectionNotice } from '@/components/layout/ConnectionNotice'
 
 import { useBooks } from '@/hooks/useBooks'
 import { useTasteProfile } from '@/hooks/useTasteProfile'
@@ -22,7 +23,7 @@ import type { BookRecommendation, SortDirection, SortField, ViewName } from '@/l
 const OWNER_VIEWS: ViewName[] = ['settings', 'import', 'taste-profile']
 
 export default function App() {
-  const { books, addBook, updateBook, deleteBook } = useBooks()
+  const { books, error: booksError, retry: retryBooks, addBook, updateBook, deleteBook } = useBooks()
   const { tasteProfile, setTasteProfile } = useTasteProfile()
   const { user, loading: authLoading, isOwner, signInWithEmail, signOut } = useAuth()
 
@@ -182,19 +183,23 @@ export default function App() {
             )}
           </div>
 
+          {booksError && <ConnectionNotice message={booksError} onRetry={retryBooks} />}
+
           {books.length > 0 && (
             <FilterBar sortField={sortField} sortDir={sortDir} onSortChange={handleSortChange} />
           )}
 
-          <BookGrid
-            books={sortedBooks}
-            tasteProfile={tasteProfile}
-            streamingTexts={streamingTexts}
-            loadingIds={loadingIds}
-            hasApiKey={isOwner}
-            onGeneratePitch={handleGeneratePitch}
-            onDelete={deleteBook}
-          />
+          {!(booksError && books.length === 0) && (
+            <BookGrid
+              books={sortedBooks}
+              tasteProfile={tasteProfile}
+              streamingTexts={streamingTexts}
+              loadingIds={loadingIds}
+              hasApiKey={isOwner}
+              onGeneratePitch={handleGeneratePitch}
+              onDelete={deleteBook}
+            />
+          )}
         </div>
       )}
 
